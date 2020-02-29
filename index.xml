@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>TechStory</title>
+    <link>https://haruband.github.io/</link>
+    <description>Recent content on TechStory</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <managingEditor>haruband@gmail.com (haruband)</managingEditor>
+    <webMaster>haruband@gmail.com (haruband)</webMaster>
+    <lastBuildDate>Sat, 29 Feb 2020 20:09:41 +0900</lastBuildDate>
+    
+	<atom:link href="https://haruband.github.io/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Second</title>
+      <link>https://haruband.github.io/post/second/</link>
+      <pubDate>Sat, 29 Feb 2020 20:09:41 +0900</pubDate>
+      <author>haruband@gmail.com (haruband)</author>
+      <guid>https://haruband.github.io/post/second/</guid>
+      <description>테스트 2</description>
+    </item>
+    
+    <item>
+      <title>First</title>
+      <link>https://haruband.github.io/post/first/</link>
+      <pubDate>Sat, 29 Feb 2020 20:06:49 +0900</pubDate>
+      <author>haruband@gmail.com (haruband)</author>
+      <guid>https://haruband.github.io/post/first/</guid>
+      <description>테스트 1
+void function() { printf(&amp;#34;good&amp;#34;) } </description>
+    </item>
+    
+    <item>
+      <title>About me</title>
+      <link>https://haruband.github.io/page/about/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <author>haruband@gmail.com (haruband)</author>
+      <guid>https://haruband.github.io/page/about/</guid>
+      <description>My name is Inigo Montoya. I have the following qualities:
+ I rock a great mustache I&amp;rsquo;m extremely loyal to my family  What else do you need?
+my history To be honest, I&amp;rsquo;m having some trouble remembering right now, so why don&amp;rsquo;t you just watch my movie and it will answer all your questions.</description>
+    </item>
+    
+  </channel>
+</rss>
