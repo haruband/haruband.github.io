@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Posts on TechStory</title>
-    <link>https://haruband.github.io/post/</link>
-    <description>Recent content in Posts on TechStory</description>
+    <title>essay on TechStory</title>
+    <link>https://haruband.github.io/tags/essay/</link>
+    <description>Recent content in essay on TechStory</description>
     <generator>Hugo -- gohugo.io</generator>
     <managingEditor>haruband@gmail.com (haruband)</managingEditor>
     <webMaster>haruband@gmail.com (haruband)</webMaster>
     <lastBuildDate>Sat, 29 Feb 2020 21:50:57 +0900</lastBuildDate>
     
-	<atom:link href="https://haruband.github.io/post/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="https://haruband.github.io/tags/essay/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
@@ -20,15 +20,6 @@
       <guid>https://haruband.github.io/post/third/</guid>
       <description>테스트 3
 void function() { printf(&amp;#34;merong&amp;#34;) } </description>
-    </item>
-    
-    <item>
-      <title>Second</title>
-      <link>https://haruband.github.io/post/second/</link>
-      <pubDate>Sat, 29 Feb 2020 20:09:41 +0900</pubDate>
-      <author>haruband@gmail.com (haruband)</author>
-      <guid>https://haruband.github.io/post/second/</guid>
-      <description>테스트 2</description>
     </item>
     
     <item>

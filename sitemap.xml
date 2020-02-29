@@ -3,17 +3,37 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
-    <loc>https://haruband.github.io/post/</loc>
-    <lastmod>2020-02-29T20:09:41+09:00</lastmod>
+    <loc>https://haruband.github.io/tags/essay/</loc>
+    <lastmod>2020-02-29T21:50:57+09:00</lastmod>
   </url>
   
   <url>
-    <loc>https://haruband.github.io/post/second/</loc>
-    <lastmod>2020-02-29T20:09:41+09:00</lastmod>
+    <loc>https://haruband.github.io/post/</loc>
+    <lastmod>2020-02-29T21:50:57+09:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://haruband.github.io/tags/</loc>
+    <lastmod>2020-02-29T21:50:57+09:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://haruband.github.io/tags/tech/</loc>
+    <lastmod>2020-02-29T21:50:57+09:00</lastmod>
   </url>
   
   <url>
     <loc>https://haruband.github.io/</loc>
+    <lastmod>2020-02-29T21:50:57+09:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://haruband.github.io/post/third/</loc>
+    <lastmod>2020-02-29T21:50:57+09:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://haruband.github.io/post/second/</loc>
     <lastmod>2020-02-29T20:09:41+09:00</lastmod>
   </url>
   
@@ -32,10 +52,6 @@
   
   <url>
     <loc>https://haruband.github.io/page/</loc>
-  </url>
-  
-  <url>
-    <loc>https://haruband.github.io/tags/</loc>
   </url>
   
 </urlset>
