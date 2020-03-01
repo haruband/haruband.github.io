@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Tags on TechStory</title>
+    <title>Tags on CodeStory</title>
     <link>https://haruband.github.io/tags/</link>
-    <description>Recent content in Tags on TechStory</description>
+    <description>Recent content in Tags on CodeStory</description>
     <generator>Hugo -- gohugo.io</generator>
     <managingEditor>haruband@gmail.com (haruband)</managingEditor>
     <webMaster>haruband@gmail.com (haruband)</webMaster>
@@ -13,20 +13,20 @@
     
     
     <item>
+      <title>code</title>
+      <link>https://haruband.github.io/tags/code/</link>
+      <pubDate>Sat, 29 Feb 2020 21:50:57 +0900</pubDate>
+      <author>haruband@gmail.com (haruband)</author>
+      <guid>https://haruband.github.io/tags/code/</guid>
+      <description></description>
+    </item>
+    
+    <item>
       <title>essay</title>
       <link>https://haruband.github.io/tags/essay/</link>
       <pubDate>Sat, 29 Feb 2020 21:50:57 +0900</pubDate>
       <author>haruband@gmail.com (haruband)</author>
       <guid>https://haruband.github.io/tags/essay/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>tech</title>
-      <link>https://haruband.github.io/tags/tech/</link>
-      <pubDate>Sat, 29 Feb 2020 21:50:57 +0900</pubDate>
-      <author>haruband@gmail.com (haruband)</author>
-      <guid>https://haruband.github.io/tags/tech/</guid>
       <description></description>
     </item>
     
