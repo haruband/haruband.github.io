@@ -1,7 +1,7 @@
 +++
 title = "[K8S] 메모리 스와핑 지원 분석"
-date = 2020-03-25T00:00:00Z
-updated = 2020-03-25T00:00:00Z
+date = 2021-03-25T00:00:00Z
+updated = 2021-03-25T00:00:00Z
 draft = false
 
 [taxonomies]

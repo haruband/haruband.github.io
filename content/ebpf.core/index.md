@@ -1,7 +1,7 @@
 +++
 title = "[eBPF] CO-RE (Compile Once - Run Everywhere) 기능 분석"
-date = 2023-08-03T00:00:00Z
-updated = 2024-08-03T00:00:00Z
+date = 2021-08-03T00:00:00Z
+updated = 2021-08-03T00:00:00Z
 draft = false
 
 [taxonomies]

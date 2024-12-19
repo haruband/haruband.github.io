@@ -1,7 +1,7 @@
 +++
 title = "[K8S] 네트워크 최적화 (MetalLB)"
-date = 2020-03-19T00:00:00Z
-updated = 2020-03-19T00:00:00Z
+date = 2021-03-19T00:00:00Z
+updated = 2021-03-19T00:00:00Z
 draft = false
 
 [taxonomies]

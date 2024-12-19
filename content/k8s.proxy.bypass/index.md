@@ -1,7 +1,7 @@
 +++
 title = "[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석"
-date = 2020-03-21T00:00:00Z
-updated = 2020-03-21T00:00:00Z
+date = 2021-03-21T00:00:00Z
+updated = 2021-03-21T00:00:00Z
 draft = false
 
 [taxonomies]

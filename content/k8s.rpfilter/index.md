@@ -1,7 +1,7 @@
 +++
 title = "[K8S] Cilium RPFilter 문제 분석"
-date = 2020-04-14T00:00:00Z
-updated = 2020-04-14T00:00:00Z
+date = 2021-04-14T00:00:00Z
+updated = 2021-04-14T00:00:00Z
 draft = false
 
 [taxonomies]
@@ -13,7 +13,7 @@ series = "K8S"
 
 리눅스는 패킷의 출발지 주소를 마음대로 조작해서 공격하는 IP 스푸핑 공격을 막기위해 RPFilter (Reverse Path Filter) 라는 기능을 제공한다. **이 기능은 간단히 소개하면 특정 네트워크 장치로 들어온 패킷이 동일한 네트워크 장치로 나갈 수 있는지를 확인하는 것인데, 이는 해당 패킷의 출발지 주소를 목적지 주소로 하는 라우팅 정보(FIB)를 이용하여 확인한다.** 오늘은 이 기능으로 인해 발생한 문제에 대해 자세히 살펴보도록 하자.
 
-## _어떠한 문제가 발생했는가???_
+## 어떠한 문제가 발생했는가???
 
 개발 서버에 쿠버네티스와 Cilium 을 설치하였는데 아래와 같이 coredns 가 동작하지 않는 문제가 발생하였다. 정확한 문제를 파악하기 위해 관련 정보들을 하나씩 분석해보도록 하자.
 
@@ -120,7 +120,7 @@ Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
 net.ipv4.conf.lxc3c160d6c7aa0.rp_filter = 2
 ```
 
-## _어떻게 문제가 발생했는가???_
+## 어떻게 문제가 발생했는가???
 
 Cilium 은 새로운 네트워크 장치를 만들 때 마다 RPFilter 를 사용하지 않도록 설정한다. 그런데 왜 RPFilter 가 사용된 것일까? 그 이유는 새로운 네트워크 장치가 추가될 때 마다 UDEV 에 의해 systemd-sysctl 이 실행되는데, 그 때 사용되는 모든 네트워크 장치의 기본 설정이 RPFilter 를 사용하는 것이기 때문이다. 즉, **Cilium 에서 새로운 네트워크 장치를 만든 직후 RPFilter 를 사용하지 않도록 설정하지만, 곧이어 UDEV 에 의해 실행되는 systemd-sysctl 이 해당 네트워크 장치의 RPFilter 를 다시 사용하도록 만들어 버린 것이다.**
 
@@ -134,7 +134,7 @@ net.ipv4.conf.default.rp_filter=2
 net.ipv4.conf.all.rp_filter=2
 ```
 
-## _어떻게 문제를 해결했는가???_
+## 어떻게 문제를 해결했는가???
 
 해당 문제를 해결할 수 있는 방법 두 가지를 소개하도록 하겠다.
 

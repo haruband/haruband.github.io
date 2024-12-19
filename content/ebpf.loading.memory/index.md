@@ -1,7 +1,7 @@
 +++
 title = "[eBPF] BPF 실행파일 로딩 과정 분석 (메모리 재배치)"
-date = 2024-08-15T00:00:00Z
-updated = 2024-08-15T00:00:00Z
+date = 2021-08-15T00:00:00Z
+updated = 2021-08-15T00:00:00Z
 draft = false
 
 [taxonomies]

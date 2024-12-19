@@ -1,7 +1,7 @@
 +++
 title = "[K8S/Spark] 메모리 최적화 (Swap)"
-date = 2020-06-21T00:00:00Z
-updated = 2020-06-21T00:00:00Z
+date = 2021-06-21T00:00:00Z
+updated = 2021-06-21T00:00:00Z
 draft = false
 
 [taxonomies]

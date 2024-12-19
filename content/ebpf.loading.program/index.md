@@ -1,7 +1,7 @@
 +++
 title = "[eBPF] BPF 실행파일 로딩 과정 분석 (서브프로그램)"
-date = 2024-08-19T00:00:00Z
-updated = 2024-08-19T00:00:00Z
+date = 2021-08-19T00:00:00Z
+updated = 2021-08-19T00:00:00Z
 draft = false
 
 [taxonomies]
