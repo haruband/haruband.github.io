@@ -1,5 +1,5 @@
 +++
-title = "[K8S] MetalLB 기반 로드밸런싱 분석"
+title = "[K8S] 네트워크 최적화 (MetalLB)"
 date = 2020-03-19T00:00:00Z
 updated = 2020-03-19T00:00:00Z
 draft = false
