@@ -1,11 +1,11 @@
 # do NOT include a trailing slash on the base URL
-base_url = "https://abridge.netlify.app"
+base_url = "https://haruband.github.io"
 # Usable site directly from disk, Including Search: "/home/jieiku/.dev/abridge/public"
 # Also set index format = "elasticlunr_javascript", and in [extra] uglyurls = true, integrity = false
 # If you use the npm/node script then all you have to do is set offline = true, and everything else is automatic.
 
-title = "Abridge"
-description = "Abridge is a fast, lightweight, and modern Zola theme (class-light, semantic HTML). Perfect Lighthouse, YellowLabTools, and Observatory scores."#for SEO aim for 140-180 Characters
+title = "CodeBook"
+description = "Haruband's TechBlog"
 theme = "abridge"
 
 default_language = "en"
@@ -44,49 +44,6 @@ external_links_no_follow = false   # rel="nofollow"
 external_links_no_referrer = false # rel="noreferrer"
 smart_punctuation = false          # `...` to `…`, `"quote"` to `“curly”` etc
 
-# Any Extra language you do not use, delete or comment out the extra language sections:
-[languages.fr]
-title = "Abridge"
-description = "Abridge est un thème Zola rapide et léger utilisant le html sémantique, le CSS abridge.css class-light et aucun JS obligatoire."
-generate_feeds = true
-build_search_index = true
-search.include_title = true # include title of page/section in index
-search.include_description = true # include description of page/section in index
-search.include_content = true # include rendered content of page/section in index
-# search.truncate_content_length = 100 # Truncate at nth character. May be useful if index is getting too large.
-taxonomies = [
-#    {name = "categories", feed = true},
-    {name = "tags", feed = true},
-]
-
-[languages.es]
-title = "Abridge"
-description = "Abridge es un tema de Zola rápido y liviano que utiliza HTML semántico, CSS ligero de clase abridge.css y JS no obligatorio."
-generate_feeds = true
-build_search_index = true
-search.include_title = true # include title of page/section in index
-search.include_description = true # include description of page/section in index
-search.include_content = true # include rendered content of page/section in index
-# search.truncate_content_length = 100 # Truncate at nth character. May be useful if index is getting too large.
-taxonomies = [
-#    {name = "categories", feed = true},
-    {name = "tags", feed = true},
-]
-
-[languages.pt]
-title = "Abridge"
-description = "Abridge é um tema rápido e leve que usa HTML semântico, CSS de clase leve abridge.css y JS não obrigatório."
-generate_feeds = true
-build_search_index = true
-search.include_title = true # include title of page/section in index
-search.include_description = true # include description of page/section in index
-search.include_content = true # include rendered content of page/section in index
-# search.truncate_content_length = 100 # Truncate at nth character. May be useful if index is getting too large.
-taxonomies = [
-#    {name = "categories", feed = true},
-    {name = "tags", feed = true},
-]
-
 [extra]
 ###############################################################################
 ### Layout & Format
@@ -105,8 +62,6 @@ menu = [
 menu_footer = [
     {url = "about", name = "About", slash = true, blank = false, size="s90"},
     {url = "contact", name = "Contact", slash = true, blank = false, size="s90"},
-    {url = "privacy", name = "Privacy", slash = true, blank = false, size="s90"},
-    {url = "sitemap.xml", name = "Sitemap", slash = false, blank = true, size="s90"},
 ]
 
 toc = true
@@ -132,7 +87,7 @@ footer_credit = true
 ### Uncomment one of the below lines, or neither, depending on which type of logo you want to use:
 #logo = { file="logo.svg", width="32", height="32", alt="Abridge", text="bridge" }
 #textlogo = '<font color="#f90">A</font>bridge'
-textlogo = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#f90" viewBox="0 0 96 96" width="28" height="28"><path stroke-width="14" d="M14 99 46 7h4l32 92"/><path stroke-width="9" d="M-3 82c43-26 59-26 102 0"/><path stroke-linecap="round" stroke-width="1.5" d="M94 72v7m-5-9.8v7m-5-9.8v7.1M79 64v7M63 57.7v7m-5-8.2v7m-5-7.8v7m-5-7.2v7m-5-6.7v7m-5-6.3v7m-5-5.8v7M17 64v7m-5-4.6v7m-5-4.2v7M2 72v7"/></svg>bridge'
+textlogo = 'CodeBook'
 
 sitedesc = false # enables or disables the display of the site description below the logo.
 headhr = false # show or hide horizontal rule below header
@@ -151,9 +106,9 @@ foothr = false # show or hide horizontal rule above footer
 ###############################################################################
 
 title_separator = "|"  # Separator between title and title_addition, set as |, -, _, etc
-title_addition = "Fast, Lightweight, and Modern Zola Theme" # a default value for title addition (for SEO aim for 50-70 characters including the title and separator 'Abridge | title_addition')
-author = "Jake G" # Put Your Name here
-keywords = "Abridge, Abridge.css, Zola, Theme, Zola Theme, getzola, Semantic Html, Fast, lightweight" # used for the primary site index
+title_addition = "Haruband's TechBlog"
+author = "Inhyeok Kim" # Put Your Name here
+keywords = "Arrow, Datafusion, Kubernetes"
 banner = "banner.png" # Used as default image for OpenGraph/Twitter if page specific image is undefined.
 twitter_meta = "your-user-name" # for SEO: twitter:site and twitter:creator
 google = "Your Google Site verification code."
@@ -169,29 +124,29 @@ seo = true  # enable or disable seo-related meta tags: opengraph, facebook, twit
 ###   https://github.com/Jieiku/abridge/blob/master/templates/macros/social.html
 ###############################################################################
 
-feed = true # this adds the RSS feed icon in the footer.
-mail = "name@example.com"
-mastodon = "https://mastodon.example.com/@username"
-element = "matrix.example.com"
+#feed = true # this adds the RSS feed icon in the footer.
+#mail = "haruband@gmail.com"
+#mastodon = "https://mastodon.example.com/@username"
+#element = "matrix.example.com"
 #buymeacoffee = "your-user-name"
-kofi = "your-user-name"
+#kofi = "your-user-name"
 #discord = "your-discord" # Everything after https://discord.com/   eg: invite/my-server  *or*  servers/my-server-id
 #twitter = "your-user-name"
 #facebook = "your-user-name"
-#linkedin = "your-user-name"
+linkedin = "inhyeok-kim-7620a0b0"
 #gitlab = "your-user-name"
-github = "your-user-name"
+github = "haruband"
 #codeberg = "your-user-name" # Everything after https://codeberg.org/   eg: username  *or*  username/repository
 #github_sponsor = "your-user-name"
 #bitbucket = "your-user-name"
 #python = "your-user-name"
 #docker = "your-user-name"
 #stack = "your-user-name"
-instagram = "your-user-name"
+#instagram = "your-user-name"
 #pixelfed = "https://pixelfed.example.com/" # Heaviest icon, off by default
 #pinterest = "your-user-name"
-twitch = "your-user-name"
-youtube = "channel/your-channel-id"
+#twitch = "your-user-name"
+#youtube = "channel/your-channel-id"
 #peertube = "https://peertube.example.com/@username"
 #researchgate = "your-profile-id"
 #telegram = "your-user-name"
