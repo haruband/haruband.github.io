@@ -1,0 +1,376 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+    <title>CodeBook - Datafusion</title>
+    <subtitle>Haruband&#x27;s TechBlog</subtitle>
+    <link rel="self" type="application/atom+xml" href="https://haruband.github.io/tags/datafusion/atom.xml"/>
+    <link rel="alternate" type="text/html" href="https://haruband.github.io"/>
+    <generator uri="https://www.getzola.org/">Zola</generator>
+    <updated>2024-12-16T00:00:00+00:00</updated>
+    <id>https://haruband.github.io/tags/datafusion/atom.xml</id>
+    <entry xml:lang="en">
+        <title>[Arrow&#x2F;Datafusion] 성능 평가 (Spark)</title>
+        <published>2024-12-16T00:00:00+00:00</published>
+        <updated>2024-12-16T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              Unknown
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://haruband.github.io/datafusion-benchmark/"/>
+        <id>https://haruband.github.io/datafusion-benchmark/</id>
+        
+        <content type="html" xml:base="https://haruband.github.io/datafusion-benchmark/">&lt;p&gt;&lt;a rel=&quot;noopener&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;apache&#x2F;datafusion&quot;&gt;Datafusion&lt;&#x2F;a&gt; 은 &lt;a rel=&quot;noopener&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;arrow.apache.org&quot;&gt;Arrow&lt;&#x2F;a&gt; 를 이용하여 Rust 기반으로 개발 중인 임베딩 SQL 엔진이다. 그래서 Scala 기반으로 개발되어 JVM 위에서 동작하는 &lt;a rel=&quot;noopener&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;spark.apache.org&quot;&gt;Spark&lt;&#x2F;a&gt; 에 비해 아래와 같은 장점을 가진다.&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;GC 없이 메모리 안정성 보장&lt;&#x2F;li&gt;
+&lt;li&gt;컬럼 기반 데이터 포맷 사용 (Arrow)&lt;&#x2F;li&gt;
+&lt;li&gt;LLVM 기반 최적화 (Vectorization, ...)&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;그렇다면 이러한 장점들이 실제 성능에는 얼마나 영향을 주는지 알아보도록 하자. 오늘은 단일 머신에서의 성능만을 비교하고, 추후에 &lt;a rel=&quot;noopener&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;datafusion.apache.org&#x2F;ballista&quot;&gt;Ballista&lt;&#x2F;a&gt; 와 같은 Datafusion 기반의 분산 처리 기술을 이용하여 분산 처리 성능도 비교해보도록 하겠다.&lt;&#x2F;p&gt;
+&lt;p&gt;실험은 OLAP 성능 검증을 위해 자주 사용되는 TPC-H (SF1000) 를 이용하였다. 실험 결과는 처리 시간과 메모리 사용량을 이용하여 분석하였으며, 최대 메모리 사용량(JVM)에 영향을 많이 받는 Spark 는 8 ~ 64 GB 까지 최대 메모리 사용량을 변경해가면서 성능을 측정하였다.&lt;&#x2F;p&gt;
+&lt;p&gt;첫 번째 실험은 하나의 테이블에서 몇 가지 조건절을 이용하여 데이터를 필터링한 다음 합계를 구하는 쿼리(TPC-H-Q6)이다.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;sql&quot; class=&quot;language-sql z-code&quot;&gt;&lt;code class=&quot;language-sql&quot; data-lang=&quot;sql&quot;&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;select&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-support z-function z-aggregate z-sql&quot;&gt;sum&lt;&#x2F;span&gt;(l_extendedprice &lt;span class=&quot;z-variable z-language z-star z-sql&quot;&gt;*&lt;&#x2F;span&gt; l_discount) &lt;span class=&quot;z-keyword z-operator z-assignment z-alias z-sql&quot;&gt;as&lt;&#x2F;span&gt; revenue
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;from&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    lineitem
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;where&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    l_shipdate &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;&amp;gt;=&lt;&#x2F;span&gt; &lt;span class=&quot;z-storage z-type z-sql&quot;&gt;date&lt;&#x2F;span&gt; &lt;span class=&quot;z-string z-quoted z-single z-sql&quot;&gt;&lt;span class=&quot;z-punctuation z-definition z-string z-begin z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;1994-01-01&lt;span class=&quot;z-punctuation z-definition z-string z-end z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;and&lt;&#x2F;span&gt; l_shipdate &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;&amp;lt;&lt;&#x2F;span&gt; &lt;span class=&quot;z-storage z-type z-sql&quot;&gt;date&lt;&#x2F;span&gt; &lt;span class=&quot;z-string z-quoted z-single z-sql&quot;&gt;&lt;span class=&quot;z-punctuation z-definition z-string z-begin z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;1995-01-01&lt;span class=&quot;z-punctuation z-definition z-string z-end z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;and&lt;&#x2F;span&gt; l_discount &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;between&lt;&#x2F;span&gt; &lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;0&lt;&#x2F;span&gt;.&lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;06&lt;&#x2F;span&gt; &lt;span class=&quot;z-keyword z-operator z-math z-sql&quot;&gt;-&lt;&#x2F;span&gt; &lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;0&lt;&#x2F;span&gt;.&lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;01&lt;&#x2F;span&gt; &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;and&lt;&#x2F;span&gt; &lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;0&lt;&#x2F;span&gt;.&lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;06&lt;&#x2F;span&gt; &lt;span class=&quot;z-keyword z-operator z-math z-sql&quot;&gt;+&lt;&#x2F;span&gt; &lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;0&lt;&#x2F;span&gt;.&lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;01&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;and&lt;&#x2F;span&gt; l_quantity &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;&amp;lt;&lt;&#x2F;span&gt; &lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;24&lt;&#x2F;span&gt;;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;아래는 처리 시간을 보여주고 있다. Datafusion 이 Spark 에 비해 대략 10 배 정도 좋은 성능을 보여주고 있다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;datafusion-benchmark&#x2F;.&#x2F;tpch.q6.png&quot; alt=&quot;tpch.q6.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;아래는 실제 메모리 사용량을 측정한 결과이다. Datafusion 은 최대 1.8 GB 정도의 메모리를 사용하였으며, Spark 는 최대 메모리 사용량(-Xmx)이 클수록 실제 메모리 사용량이 커지면서 오히려 성능이 약간 떨어지는 모습을 볼 수 있다. Spark 는 중간 결과나 재활용할 수 있는 데이터를 메모리에 최대한 유지하는 정책을 취하기 때문에 메모리 사용량이 증가하면서 GC(GarbageCollection) 오버헤드를 증가시키는 등 오히려 안 좋은 결과를 보여줄 수 있다. (최대 메모리 사용량이 8 GB 일때는 GC 에 1.5 초를 소요했지만, 64 GB 일때는 2.4 초를 소요했다.)&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;datafusion-benchmark&#x2F;.&#x2F;memory.q6.png&quot; alt=&quot;memory.q6.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;두 번째 실험은 하나의 테이블에서 그룹별 집계를 구하는 쿼리(TPC-H-Q1)이다.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;sql&quot; class=&quot;language-sql z-code&quot;&gt;&lt;code class=&quot;language-sql&quot; data-lang=&quot;sql&quot;&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;select&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    l_returnflag,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    l_linestatus,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-support z-function z-aggregate z-sql&quot;&gt;sum&lt;&#x2F;span&gt;(l_quantity) &lt;span class=&quot;z-keyword z-operator z-assignment z-alias z-sql&quot;&gt;as&lt;&#x2F;span&gt; sum_qty,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-support z-function z-aggregate z-sql&quot;&gt;sum&lt;&#x2F;span&gt;(l_extendedprice) &lt;span class=&quot;z-keyword z-operator z-assignment z-alias z-sql&quot;&gt;as&lt;&#x2F;span&gt; sum_base_price,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-support z-function z-aggregate z-sql&quot;&gt;sum&lt;&#x2F;span&gt;(l_extendedprice &lt;span class=&quot;z-variable z-language z-star z-sql&quot;&gt;*&lt;&#x2F;span&gt; (&lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;1&lt;&#x2F;span&gt; &lt;span class=&quot;z-keyword z-operator z-math z-sql&quot;&gt;-&lt;&#x2F;span&gt; l_discount)) &lt;span class=&quot;z-keyword z-operator z-assignment z-alias z-sql&quot;&gt;as&lt;&#x2F;span&gt; sum_disc_price,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-support z-function z-aggregate z-sql&quot;&gt;sum&lt;&#x2F;span&gt;(l_extendedprice &lt;span class=&quot;z-variable z-language z-star z-sql&quot;&gt;*&lt;&#x2F;span&gt; (&lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;1&lt;&#x2F;span&gt; &lt;span class=&quot;z-keyword z-operator z-math z-sql&quot;&gt;-&lt;&#x2F;span&gt; l_discount) &lt;span class=&quot;z-variable z-language z-star z-sql&quot;&gt;*&lt;&#x2F;span&gt; (&lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;1&lt;&#x2F;span&gt; &lt;span class=&quot;z-keyword z-operator z-math z-sql&quot;&gt;+&lt;&#x2F;span&gt; l_tax)) &lt;span class=&quot;z-keyword z-operator z-assignment z-alias z-sql&quot;&gt;as&lt;&#x2F;span&gt; sum_charge,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-support z-function z-aggregate z-sql&quot;&gt;avg&lt;&#x2F;span&gt;(l_quantity) &lt;span class=&quot;z-keyword z-operator z-assignment z-alias z-sql&quot;&gt;as&lt;&#x2F;span&gt; avg_qty,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-support z-function z-aggregate z-sql&quot;&gt;avg&lt;&#x2F;span&gt;(l_extendedprice) &lt;span class=&quot;z-keyword z-operator z-assignment z-alias z-sql&quot;&gt;as&lt;&#x2F;span&gt; avg_price,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-support z-function z-aggregate z-sql&quot;&gt;avg&lt;&#x2F;span&gt;(l_discount) &lt;span class=&quot;z-keyword z-operator z-assignment z-alias z-sql&quot;&gt;as&lt;&#x2F;span&gt; avg_disc,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-support z-function z-aggregate z-sql&quot;&gt;count&lt;&#x2F;span&gt;(&lt;span class=&quot;z-variable z-language z-star z-sql&quot;&gt;*&lt;&#x2F;span&gt;) &lt;span class=&quot;z-keyword z-operator z-assignment z-alias z-sql&quot;&gt;as&lt;&#x2F;span&gt; count_order
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;from&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    lineitem
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;where&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    l_shipdate &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;&amp;lt;=&lt;&#x2F;span&gt; &lt;span class=&quot;z-storage z-type z-sql&quot;&gt;date&lt;&#x2F;span&gt; &lt;span class=&quot;z-string z-quoted z-single z-sql&quot;&gt;&lt;span class=&quot;z-punctuation z-definition z-string z-begin z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;1998-09-02&lt;span class=&quot;z-punctuation z-definition z-string z-end z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;group by&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    l_returnflag,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    l_linestatus
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;order by&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    l_returnflag,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    l_linestatus;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Datafusion 이 Spark 에 비해 대략 10 ~ 12 배 정도 좋은 성능을 보여주고 있다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;datafusion-benchmark&#x2F;.&#x2F;tpch.q1.png&quot; alt=&quot;tpch.q1.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;Datafusion 은 최대 2 GB 정도의 메모리를 사용하였으며, Spark 는 앞의 실험과 유사한 결과를 보여주지만 그룹별 집계가 메모리 사용량이 많기 때문에 성능이 나빠지는 정도가 훨씬 심해진 것을 볼 수 있다. (최대 메모리 사용량이 8 GB 일때는 GC 에 21 초를 소요했지만, 64 GB 일때는 40 초를 소요했다.)&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;datafusion-benchmark&#x2F;.&#x2F;memory.q1.png&quot; alt=&quot;memory.q1.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;세 번째 실험은 두 개의 테이블을 조인하는 쿼리(TPC-H-Q12)이다. 등가(Equal) 조인을 처리하는 방식은 BroadcastJoin, HashJoin, SortMergeJoin 등이 있는데, 이번 실험에서는 최적화가 충분치 않은 Datafusion 의 SortMergeJoin 과 데이터 크기가 커서 사용할 수 없는 Spark 의 BroadcastJoin 은 제외하고 진행하였다.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;sql&quot; class=&quot;language-sql z-code&quot;&gt;&lt;code class=&quot;language-sql&quot; data-lang=&quot;sql&quot;&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;select&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    l_shipmode,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-support z-function z-aggregate z-sql&quot;&gt;sum&lt;&#x2F;span&gt;(&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;case&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;            &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;when&lt;&#x2F;span&gt; o_orderpriority &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;=&lt;&#x2F;span&gt; &lt;span class=&quot;z-string z-quoted z-single z-sql&quot;&gt;&lt;span class=&quot;z-punctuation z-definition z-string z-begin z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;1-URGENT&lt;span class=&quot;z-punctuation z-definition z-string z-end z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;                &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;or&lt;&#x2F;span&gt; o_orderpriority &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;=&lt;&#x2F;span&gt; &lt;span class=&quot;z-string z-quoted z-single z-sql&quot;&gt;&lt;span class=&quot;z-punctuation z-definition z-string z-begin z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;2-HIGH&lt;span class=&quot;z-punctuation z-definition z-string z-end z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;                &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;then&lt;&#x2F;span&gt; &lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;1&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;            &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;else&lt;&#x2F;span&gt; &lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;0&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;        &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;end&lt;&#x2F;span&gt;) &lt;span class=&quot;z-keyword z-operator z-assignment z-alias z-sql&quot;&gt;as&lt;&#x2F;span&gt; high_line_count,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-support z-function z-aggregate z-sql&quot;&gt;sum&lt;&#x2F;span&gt;(&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;case&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;            &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;when&lt;&#x2F;span&gt; o_orderpriority &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;&amp;lt;&amp;gt;&lt;&#x2F;span&gt; &lt;span class=&quot;z-string z-quoted z-single z-sql&quot;&gt;&lt;span class=&quot;z-punctuation z-definition z-string z-begin z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;1-URGENT&lt;span class=&quot;z-punctuation z-definition z-string z-end z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;                &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;and&lt;&#x2F;span&gt; o_orderpriority &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;&amp;lt;&amp;gt;&lt;&#x2F;span&gt; &lt;span class=&quot;z-string z-quoted z-single z-sql&quot;&gt;&lt;span class=&quot;z-punctuation z-definition z-string z-begin z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;2-HIGH&lt;span class=&quot;z-punctuation z-definition z-string z-end z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;                &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;then&lt;&#x2F;span&gt; &lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;1&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;            &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;else&lt;&#x2F;span&gt; &lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;0&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;        &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;end&lt;&#x2F;span&gt;) &lt;span class=&quot;z-keyword z-operator z-assignment z-alias z-sql&quot;&gt;as&lt;&#x2F;span&gt; low_line_count
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;from&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    lineitem
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;join&lt;&#x2F;span&gt; orders on l_orderkey &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;=&lt;&#x2F;span&gt; o_orderkey
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;where&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    l_shipmode &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;in&lt;&#x2F;span&gt; (&lt;span class=&quot;z-string z-quoted z-single z-sql&quot;&gt;&lt;span class=&quot;z-punctuation z-definition z-string z-begin z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;MAIL&lt;span class=&quot;z-punctuation z-definition z-string z-end z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;, &lt;span class=&quot;z-string z-quoted z-single z-sql&quot;&gt;&lt;span class=&quot;z-punctuation z-definition z-string z-begin z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;SHIP&lt;span class=&quot;z-punctuation z-definition z-string z-end z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;)
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;and&lt;&#x2F;span&gt; l_commitdate &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;&amp;lt;&lt;&#x2F;span&gt; l_receiptdate
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;and&lt;&#x2F;span&gt; l_shipdate &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;&amp;lt;&lt;&#x2F;span&gt; l_commitdate
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;and&lt;&#x2F;span&gt; l_receiptdate &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;&amp;gt;=&lt;&#x2F;span&gt; &lt;span class=&quot;z-storage z-type z-sql&quot;&gt;date&lt;&#x2F;span&gt; &lt;span class=&quot;z-string z-quoted z-single z-sql&quot;&gt;&lt;span class=&quot;z-punctuation z-definition z-string z-begin z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;1994-01-01&lt;span class=&quot;z-punctuation z-definition z-string z-end z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;and&lt;&#x2F;span&gt; l_receiptdate &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;&amp;lt;&lt;&#x2F;span&gt; &lt;span class=&quot;z-storage z-type z-sql&quot;&gt;date&lt;&#x2F;span&gt; &lt;span class=&quot;z-string z-quoted z-single z-sql&quot;&gt;&lt;span class=&quot;z-punctuation z-definition z-string z-begin z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;1995-01-01&lt;span class=&quot;z-punctuation z-definition z-string z-end z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;group by&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    l_shipmode
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;order by&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    l_shipmode;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Datafusion 의 BroadcastJoin 이 가장 좋은 성능을 보여주고 있으며, Spark 에 비해 대략 7.6 배 정도 좋은 성능을 보여주고 있다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;datafusion-benchmark&#x2F;.&#x2F;tpch.q12.png&quot; alt=&quot;tpch.q12.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;Datafusion 은 BroadcastJoin 과 HashJoin 에서 2.5 GB 정도의 메모리를 사용하였으며, Spark 는 HashJoin 에서 64 GB 의 메모리도 부족하여 파티션을 두 배(400)로 늘려서 실험하였다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;datafusion-benchmark&#x2F;.&#x2F;memory.q12.png&quot; alt=&quot;memory.q12.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;실험 결과를 종합해보면, Datafusion 이 훨씬 적은 메모리를 사용하면서도 10 배 정도 좋은 성능을 보여주고 있다. 또한, Spark 는 최대 메모리 사용량에 따른 실제 메모리 사용량과 처리 시간을 예측하기 힘들고, 최대 메모리 사용량이 부족하면 예기치 못한 OOM(OutOfMemory) 도 자주 발생하기 때문에 사용하기가 매우 까다롭다.&lt;&#x2F;p&gt;
+&lt;p&gt;마지막으로 Datafusion 이 어떻게 좋은 성능을 보여주는지 살펴보도록 하자.&lt;&#x2F;p&gt;
+&lt;p&gt;첫 번째 이유는 GC 를 사용하지 않기 때문이다. GC 를 사용하면 메모리를 반환하더라도 GC 에 의해 해제되기 전까지 재사용이 불가능하기 때문에 실제 메모리 사용량보다 많은 메모리를 사용할 수 밖에 없고, 실제 메모리 사용량을 정확히 예측하기 어렵다. 그리고 최대 메모리 사용량을 늘리면 GC 에 의해 관리되는 영역이 커지기 때문에 그만큼 오버헤드가 증가하지만, 최대 메모리 사용량을 줄이면 예기치 못한 OOM 이 발생한다. 반면에, GC 를 사용하지 않고 시스템 메모리를 바로 사용하면 메모리를 반환하는 즉시 재사용이 가능하고, 최대 메모리 사용량을 별도로 설정할 필요없이 시스템 메모리를 최대로 활용할 수 있으며 스왑까지 충분히 활용한다면 이론적으로는 OOM 은 발생하지 않는다.&lt;&#x2F;p&gt;
+&lt;p&gt;두 번째 이유는 컬럼 기반 데이터 포맷을 사용하기 때문이다. 이로 인해 캐시 효율이 높아지고, 아래 소개할 LLVM 을 이용한 AutoVectorization 도 가능해진다.&lt;&#x2F;p&gt;
+&lt;p&gt;세 번째 이유는 LLVM 을 이용하여 최적화하기 때문이다. Spark 는 바이트코드로 배포되어 JIT(JustInTime) 기술을 이용하여 실행되기 때문에 충분한 최적화를 하기가 힘들지만, Datafusion 은 LLVM 으로 컴파일한 네이티브코드를 배포하기 때문에 충분한 최적화를 할 수 있다. 이로 인해 컬럼 기반 데이터 포맷을 사용하는 Datafusion 에서는 각각의 컬럼이 연속된 메모리 공간을 차지하기 때문에 최소한의 노력으로 Vectorization 과 같은 하드웨어 가속을 바로 사용할 수 있게 된다.&lt;&#x2F;p&gt;
+&lt;p&gt;8 개 정수의 합을 구하는 간단한 예제를 통해 LLVM 이 어떻게 연속된 메모리에 대한 반복 연산을 최적화하는지 살펴보자.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; class=&quot;language-rust z-code&quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span class=&quot;z-source z-rust&quot;&gt;&lt;span class=&quot;z-meta z-function z-rust&quot;&gt;&lt;span class=&quot;z-meta z-function z-rust&quot;&gt;&lt;span class=&quot;z-storage z-modifier z-rust&quot;&gt;pub&lt;&#x2F;span&gt; &lt;span class=&quot;z-storage z-type z-function z-rust&quot;&gt;fn&lt;&#x2F;span&gt; &lt;&#x2F;span&gt;&lt;span class=&quot;z-entity z-name z-function z-rust&quot;&gt;loop_simple&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function z-rust&quot;&gt;&lt;span class=&quot;z-meta z-function z-parameters z-rust&quot;&gt;&lt;span class=&quot;z-punctuation z-section z-parameters z-begin z-rust&quot;&gt;(&lt;&#x2F;span&gt;&lt;span class=&quot;z-variable z-parameter z-rust&quot;&gt;a&lt;&#x2F;span&gt;&lt;span class=&quot;z-punctuation z-separator z-rust&quot;&gt;:&lt;&#x2F;span&gt; &lt;span class=&quot;z-keyword z-operator z-rust&quot;&gt;&amp;amp;&lt;&#x2F;span&gt;[&lt;span class=&quot;z-storage z-type z-rust&quot;&gt;i32&lt;&#x2F;span&gt;; 8]&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function z-rust&quot;&gt;&lt;span class=&quot;z-meta z-function z-parameters z-rust&quot;&gt;&lt;span class=&quot;z-punctuation z-section z-parameters z-end z-rust&quot;&gt;)&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function z-rust&quot;&gt; &lt;span class=&quot;z-meta z-function z-return-type z-rust&quot;&gt;&lt;span class=&quot;z-punctuation z-separator z-rust&quot;&gt;-&amp;gt;&lt;&#x2F;span&gt; &lt;span class=&quot;z-storage z-type z-rust&quot;&gt;i32&lt;&#x2F;span&gt;&lt;&#x2F;span&gt; &lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function z-rust&quot;&gt;&lt;span class=&quot;z-meta z-block z-rust&quot;&gt;&lt;span class=&quot;z-punctuation z-section z-block z-begin z-rust&quot;&gt;{&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-rust&quot;&gt;&lt;span class=&quot;z-meta z-function z-rust&quot;&gt;&lt;span class=&quot;z-meta z-block z-rust&quot;&gt;    &lt;span class=&quot;z-storage z-type z-rust&quot;&gt;let&lt;&#x2F;span&gt; &lt;span class=&quot;z-storage z-modifier z-rust&quot;&gt;mut&lt;&#x2F;span&gt; r&lt;span class=&quot;z-punctuation z-separator z-rust&quot;&gt;:&lt;&#x2F;span&gt; &lt;span class=&quot;z-storage z-type z-rust&quot;&gt;i32&lt;&#x2F;span&gt; &lt;span class=&quot;z-keyword z-operator z-assignment z-rust&quot;&gt;=&lt;&#x2F;span&gt; &lt;span class=&quot;z-constant z-numeric z-integer z-decimal z-rust&quot;&gt;0&lt;&#x2F;span&gt;&lt;span class=&quot;z-punctuation z-terminator z-rust&quot;&gt;;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-rust&quot;&gt;&lt;span class=&quot;z-meta z-function z-rust&quot;&gt;&lt;span class=&quot;z-meta z-block z-rust&quot;&gt;    &lt;span class=&quot;z-keyword z-control z-rust&quot;&gt;for&lt;&#x2F;span&gt; var &lt;span class=&quot;z-keyword z-operator z-rust&quot;&gt;in&lt;&#x2F;span&gt; a&lt;span class=&quot;z-punctuation z-accessor z-dot z-rust&quot;&gt;.&lt;&#x2F;span&gt;&lt;span class=&quot;z-support z-function z-rust&quot;&gt;iter&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-group z-rust&quot;&gt;&lt;span class=&quot;z-punctuation z-section z-group z-begin z-rust&quot;&gt;(&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-group z-rust&quot;&gt;&lt;span class=&quot;z-punctuation z-section z-group z-end z-rust&quot;&gt;)&lt;&#x2F;span&gt;&lt;&#x2F;span&gt; &lt;span class=&quot;z-meta z-block z-rust&quot;&gt;&lt;span class=&quot;z-punctuation z-section z-block z-begin z-rust&quot;&gt;{&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-rust&quot;&gt;&lt;span class=&quot;z-meta z-function z-rust&quot;&gt;&lt;span class=&quot;z-meta z-block z-rust&quot;&gt;&lt;span class=&quot;z-meta z-block z-rust&quot;&gt;        r &lt;span class=&quot;z-keyword z-operator z-assignment z-rust&quot;&gt;+=&lt;&#x2F;span&gt; var&lt;span class=&quot;z-punctuation z-terminator z-rust&quot;&gt;;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-rust&quot;&gt;&lt;span class=&quot;z-meta z-function z-rust&quot;&gt;&lt;span class=&quot;z-meta z-block z-rust&quot;&gt;&lt;span class=&quot;z-meta z-block z-rust&quot;&gt;    &lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-block z-rust&quot;&gt;&lt;span class=&quot;z-punctuation z-section z-block z-end z-rust&quot;&gt;}&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-rust&quot;&gt;&lt;span class=&quot;z-meta z-function z-rust&quot;&gt;&lt;span class=&quot;z-meta z-block z-rust&quot;&gt;    r
+&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-rust&quot;&gt;&lt;span class=&quot;z-meta z-function z-rust&quot;&gt;&lt;span class=&quot;z-meta z-block z-rust&quot;&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-block z-rust&quot;&gt;&lt;span class=&quot;z-punctuation z-section z-block z-end z-rust&quot;&gt;}&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;아래는 위의 코드를 최적화 없이 컴파일한 결과이다. 많은 명령어와 메모리 접근이 빈번하게 발생하는 것을 볼 수 있다.&lt;&#x2F;p&gt;
+&lt;pre class=&quot;z-code&quot;&gt;&lt;code&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;       0: 48 83 ec 38                   subq  $56, %rsp
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;       4: 48 89 7c 24 28                movq  %rdi, 40(%rsp)
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;       9: c7 44 24 0c 00 00 00 00       movl  $0, 12(%rsp)
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      11: be 08 00 00 00                movl  $8, %esi
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      16: ff 15 00 00 00 00             callq *(%rip)
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      1c: 48 89 c7                      movq  %rax, %rdi
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      1f: 48 89 d6                      movq  %rdx, %rsi
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      22: ff 15 00 00 00 00             callq *(%rip)
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      28: 48 89 44 24 10                movq  %rax, 16(%rsp)
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      2d: 48 89 54 24 18                movq  %rdx, 24(%rsp)
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      32: 48 8d 7c 24 10                leaq  16(%rsp), %rdi
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      37: ff 15 00 00 00 00             callq *(%rip)
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      3d: 48 89 44 24 20                movq  %rax, 32(%rsp)
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      42: 48 8b 54 24 20                movq  32(%rsp), %rdx
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      47: b8 01 00 00 00                movl  $1, %eax
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      4c: 31 c9                         xorl  %ecx, %ecx
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      4e: 48 83 fa 00                   cmpq  $0, %rdx
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      52: 48 0f 44 c1                   cmoveq  %rcx, %rax
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      56: 48 83 f8 00                   cmpq  $0, %rax
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      5a: 75 09                         jne 0x65
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      5c: 8b 44 24 0c                   movl  12(%rsp), %eax
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      60: 48 83 c4 38                   addq  $56, %rsp
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      64: c3                            retq
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      65: 48 8b 74 24 20                movq  32(%rsp), %rsi
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      6a: 48 89 74 24 30                movq  %rsi, 48(%rsp)
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      6f: 48 8d 7c 24 0c                leaq  12(%rsp), %rdi
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      74: 48 8d 15 00 00 00 00          leaq  (%rip), %rdx
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      7b: e8 00 00 00 00                callq 0x80
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      80: eb b0                         jmp 0x32
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      ...
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;아래는 Vectorization 이 적용된 결과이다. 위의 코드에 비해 훨씬 적은 명령어와 메모리 접근이 발생하는 것을 볼 수 있다.&lt;&#x2F;p&gt;
+&lt;pre class=&quot;z-code&quot;&gt;&lt;code&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;       0: f3 0f 6f 07                   movdqu  (%rdi), %xmm0
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;       4: f3 0f 6f 4f 10                movdqu  16(%rdi), %xmm1
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;       9: 66 0f fe c8                   paddd   %xmm0, %xmm1
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;       d: 66 0f 70 c1 ee                pshufd  $238, %xmm1, %xmm0
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      12: 66 0f fe c1                   paddd   %xmm1, %xmm0
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      16: 66 0f 70 c8 55                pshufd  $85, %xmm0, %xmm1
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      1b: 66 0f fe c8                   paddd   %xmm0, %xmm1
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      1f: 66 0f 7e c8                   movd    %xmm1, %eax
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      23: c3                            retq
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;지금까지 몇 가지 실험을 통해 Datafusion 과 Spark 의 성능을 검증 및 분석해보았다. Datafusion 은 아직 공개된지 오래되지 않았고, 매우 활발하게 개발 중이기 때문에 앞으로 더 좋은 성능을 보여줄 것으로 기대하고 있다. 그리고 Spark 와 Trino 도 자바의 한계를 벗어나기 위해 핵심 쿼리 엔진을 &lt;a rel=&quot;noopener&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;www.databricks.com&#x2F;product&#x2F;photon&quot;&gt;Photon&lt;&#x2F;a&gt; 이나 &lt;a rel=&quot;noopener&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;facebookincubator&#x2F;velox&quot;&gt;Velox&lt;&#x2F;a&gt; 로 교체하려는 시도를 하고 있고, &lt;a rel=&quot;noopener&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;apache&#x2F;datafusion-comet&quot;&gt;Spark 의 쿼리 엔진을 Datafusion 으로 교체하려는 시도&lt;&#x2F;a&gt;도 이미 진행 중이기 때문에 앞으로 많은 변화가 있을 것으로 기대된다.&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+    <entry xml:lang="en">
+        <title>[Arrow&#x2F;Datafusion] 동작 과정 분석 (Join)</title>
+        <published>2024-11-25T00:00:00+00:00</published>
+        <updated>2024-11-25T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              Unknown
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://haruband.github.io/datafusion-join/"/>
+        <id>https://haruband.github.io/datafusion-join/</id>
+        
+        <content type="html" xml:base="https://haruband.github.io/datafusion-join/">&lt;p&gt;대부분의 SQL 엔진에서 성능 향상을 위해 가장 많이 신경쓰는 부분은 바로 조인(Join)일 것이다. 그래서 다양한 조건의 조인을 처리하는 여러 가지 동작 방식이 존재하고, 다양한 상황을 고려하여 최선의 동작 방식을 선택하는 것이 필수이다. 오늘은 Datafusion 에서 어떤 방식으로 조인을 처리하는지, 어떤 방법으로 최적화되는지 살펴보도록 하자.&lt;&#x2F;p&gt;
+&lt;p&gt;조인을 처리하는 방식에 가장 큰 영향을 주는 등가(Equal) 조건의 유무에 따라 조인을 어떻게 처리하는지 살펴보자.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;sql&quot; class=&quot;language-sql z-code&quot;&gt;&lt;code class=&quot;language-sql&quot; data-lang=&quot;sql&quot;&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;select&lt;&#x2F;span&gt; &lt;span class=&quot;z-variable z-language z-star z-sql&quot;&gt;*&lt;&#x2F;span&gt; &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;from&lt;&#x2F;span&gt; left &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;inner join&lt;&#x2F;span&gt; right on &lt;span class=&quot;z-constant z-other z-database-name z-sql&quot;&gt;left&lt;&#x2F;span&gt;.&lt;span class=&quot;z-constant z-other z-table-name z-sql&quot;&gt;country&lt;&#x2F;span&gt; &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;=&lt;&#x2F;span&gt;&lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;=&lt;&#x2F;span&gt; &lt;span class=&quot;z-constant z-other z-database-name z-sql&quot;&gt;right&lt;&#x2F;span&gt;.&lt;span class=&quot;z-constant z-other z-table-name z-sql&quot;&gt;country&lt;&#x2F;span&gt; &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;and&lt;&#x2F;span&gt; &lt;span class=&quot;z-constant z-other z-database-name z-sql&quot;&gt;left&lt;&#x2F;span&gt;.&lt;span class=&quot;z-constant z-other z-table-name z-sql&quot;&gt;job&lt;&#x2F;span&gt; &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;=&lt;&#x2F;span&gt;&lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;=&lt;&#x2F;span&gt; &lt;span class=&quot;z-constant z-other z-database-name z-sql&quot;&gt;right&lt;&#x2F;span&gt;.&lt;span class=&quot;z-constant z-other z-table-name z-sql&quot;&gt;job&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;위의 쿼리는 두 개 컬럼[country, job]에 대한 등가 조건을 포함하고 있고, 아래와 같은 논리 계획으로 변환되어 일반적으로 두 가지 방식(HashJoin&#x2F;SortMergeJoin)으로 실행된다.&lt;&#x2F;p&gt;
+&lt;pre class=&quot;z-code&quot;&gt;&lt;code&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;Inner Join: left.country = right.country, left.job = right.job
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;  TableScan: left projection=[country, job, salary]
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;  TableScan: right projection=[country, job, salary]
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;우선, 대부분 가장 좋은 성능을 보여주는 HashJoin 부터 살펴보자. 이는 아래 그림처럼 작은 테이블을 이용하여 해시 테이블을 먼저 만들고, 큰 테이블을 순서대로 비교하면서 처리하는 방식이다. 해시를 이용하기 때문에 큰 테이블에 있는 데이터가 작은 테이블에 있는지 비교하는 비용은 O(1) 이지만, 해시 테이블을 메모리에 유지하는 비용이 문제가 될 수 있다. 그래서 테이블의 크기가 작다면 하나의 해시 테이블을 만드는 방식(CollectLeft)을 사용하고, 테이블의 크기가 크다면 조건 컬럼[country, job]의 해시를 이용해서 나눈 다음 파티션별로 해시 테이블을 만드는 방식(Partitioned)을 사용한다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;datafusion-join&#x2F;.&#x2F;join2.png&quot; alt=&quot;join2.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;조인에 사용되는 두 개의 테이블 중에 크기가 충분히 작은 테이블이 있다면 아래와 같은 실행 계획으로 변환된다.&lt;&#x2F;p&gt;
+&lt;pre class=&quot;z-code&quot;&gt;&lt;code&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;HashJoinExec: mode=CollectLeft, join_type=Inner, on=[(country@0, country@0), (job@1, job@1)]
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;  CsvExec: file_groups={1 group: [[left.csv]]}, projection=[country, job, salary], output_ordering=[country@0 ASC NULLS LAST], has_header=true
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;  RepartitionExec: partitioning=RoundRobinBatch(2), input_partitions=1
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;    CsvExec: file_groups={1 group: [[right.csv]]}, projection=[country, job, salary], output_ordering=[country@0 ASC NULLS LAST], has_header=true
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;위의 실행 계획은 작은 테이블(left.csv)을 이용하여 해시 테이블을 먼저 만들고, 큰 테이블(right.csv)은 두 개의 파티션으로 나눈 다음 앞에서 만든 해시 테이블을 이용하여 비교한다. 분산 처리 엔진(Spark)은 마스터 노드에서 해시 테이블을 만들어서 워커 노드로 전송하기 때문에 오버헤드가 크지만, Datafusion 은 하나의 프로세스 내에서 간단히 해시 테이블을 공유해서 사용한다.&lt;&#x2F;p&gt;
+&lt;p&gt;조인에 사용되는 두 개의 테이블 중에 크기가 충분히 작은 테이블이 없다면 아래와 같은 실행 계획으로 변환된다.&lt;&#x2F;p&gt;
+&lt;pre class=&quot;z-code&quot;&gt;&lt;code&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;HashJoinExec: mode=Partitioned, join_type=Inner, on=[(country@0, country@0), (job@1, job@1)]
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;  RepartitionExec: partitioning=Hash([country@0, job@1], 2), input_partitions=2
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;    RepartitionExec: partitioning=RoundRobinBatch(2), input_partitions=1
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      CsvExec: file_groups={1 group: [[left.csv]]}, projection=[country, job, salary], output_ordering=[country@0 ASC NULLS LAST], has_header=true
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;  RepartitionExec: partitioning=Hash([country@0, job@1], 2), input_partitions=2
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;    RepartitionExec: partitioning=RoundRobinBatch(2), input_partitions=1
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      CsvExec: file_groups={1 group: [[right.csv]]}, projection=[country, job, salary], output_ordering=[country@0 ASC NULLS LAST], has_header=true
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;위의 실행 계획은 두 테이블을 각각 두 개의 파티션으로 나눈 다음, 조건 컬럼[country, job]의 해시를 이용하여 파티션을 재분배한다. 이렇게 되면 같은 조건 컬럼을 가지는 두 테이블의 모든 행(row)은 같은 파티션으로 모이기 때문에 파티션별로 해시 테이블을 만들어서 처리하면 된다.&lt;&#x2F;p&gt;
+&lt;p&gt;다음으로, SortMergeJoin 을 살펴보자. 이는 아래 그림처럼 두 개의 테이블을 정렬한 다음 순차적으로 비교하면서 처리하는 방식이다. 정렬된 두 개의 테이블이 어떤 순서로 처리되는지 번호로 표시를 해두었다. 원리는 단순한데, 두 개의 테이블을 비교해서 오른쪽 테이블의 행(row)이 크면 왼쪽 테이블의 다음 행으로 넘어가고, 왼쪽 테이블의 행이 크면 오른쪽 테이블의 다음 행으로 넘어간다. 이런 방식으로 하면 빠짐없이 같은 조건 컬럼을 가지는 모든 행의 조합을 찾을 수 있다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;datafusion-join&#x2F;.&#x2F;join1.png&quot; alt=&quot;join1.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;SortMergeJoin 을 사용했을 때의 실행 계획은 아래와 같다.&lt;&#x2F;p&gt;
+&lt;pre class=&quot;z-code&quot;&gt;&lt;code&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;SortMergeJoin: join_type=Inner, on=[(country@0, country@0), (job@1, job@1)]
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;  SortExec: expr=[country@0 ASC, job@1 ASC], preserve_partitioning=[true]
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;    RepartitionExec: partitioning=Hash([country@0, job@1], 2), input_partitions=2
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      RepartitionExec: partitioning=RoundRobinBatch(2), input_partitions=1
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;        CsvExec: file_groups={1 group: [[left.csv]]}, projection=[country, job, salary], output_ordering=[country@0 ASC NULLS LAST], has_header=true
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;  SortExec: expr=[country@0 ASC, job@1 ASC], preserve_partitioning=[true]
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;    RepartitionExec: partitioning=Hash([country@0, job@1], 2), input_partitions=2
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      RepartitionExec: partitioning=RoundRobinBatch(2), input_partitions=1
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;        CsvExec: file_groups={1 group: [[right.csv]]}, projection=[country, job, salary], output_ordering=[country@0 ASC NULLS LAST], has_header=true
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;위의 실행 계획은 두 테이블을 각각 두 개의 파티션으로 나눈 다음, 조건 컬럼[country, job]의 해시를 이용하여 파티션을 재분배한다. 그리고 파티션별로 정렬한 다음 순차적으로 비교하면서 처리한다.&lt;&#x2F;p&gt;
+&lt;p&gt;아래와 같이 등가 조건이 없는 비등가 조인은 어떻게 처리되는지 살펴보자.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;sql&quot; class=&quot;language-sql z-code&quot;&gt;&lt;code class=&quot;language-sql&quot; data-lang=&quot;sql&quot;&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;select&lt;&#x2F;span&gt; &lt;span class=&quot;z-variable z-language z-star z-sql&quot;&gt;*&lt;&#x2F;span&gt; &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;from&lt;&#x2F;span&gt; left &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;inner join&lt;&#x2F;span&gt; right on &lt;span class=&quot;z-constant z-other z-database-name z-sql&quot;&gt;left&lt;&#x2F;span&gt;.&lt;span class=&quot;z-constant z-other z-table-name z-sql&quot;&gt;salary&lt;&#x2F;span&gt; &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;&amp;gt;&lt;&#x2F;span&gt; &lt;span class=&quot;z-constant z-other z-database-name z-sql&quot;&gt;right&lt;&#x2F;span&gt;.&lt;span class=&quot;z-constant z-other z-table-name z-sql&quot;&gt;salary&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;위의 쿼리는 아래와 같은 논리 계획으로 변환된다.&lt;&#x2F;p&gt;
+&lt;pre class=&quot;z-code&quot;&gt;&lt;code&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;Inner Join:  Filter: left.salary &amp;gt; right.salary
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;  TableScan: left projection=[country, job, salary]
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;  TableScan: right projection=[country, job, salary]
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;비등가 조인은 일반적으로 두 가지 방식(NestedLoopJoin&#x2F;CrossJoin)으로 처리된다. 동작 원리는 간단한데, 아래처럼 두 테이블의 가능한 조합을 모두 확인한다고 보면 된다. 그래서 성능적인 문제가 있기 때문에 꼭 필요할 때만 사용되는 방식이다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;datafusion-join&#x2F;.&#x2F;join0.png&quot; alt=&quot;join0.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;아래는 NestedLoopJoin 을 사용했을 때의 실행 계획이다.&lt;&#x2F;p&gt;
+&lt;pre class=&quot;z-code&quot;&gt;&lt;code&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;NestedLoopJoinExec: join_type=Inner, filter=salary@0 &amp;gt; salary@1
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;  CsvExec: file_groups={1 group: [[left.csv]]}, projection=[country, job, salary], output_ordering=[country@0 ASC NULLS LAST], has_header=true
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;  RepartitionExec: partitioning=RoundRobinBatch(2), input_partitions=1
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;    CsvExec: file_groups={1 group: [[right.csv]]}, projection=[country, job, salary], output_ordering=[country@0 ASC NULLS LAST], has_header=true
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;위의 실행 계획은 큰 테이블(right.csv)을 두 개의 파티션으로 나눈 다음 작은 테이블(left.csv)과 가능한 조합을 모두 확인한다. 앞의 HashJoin 은 작은 테이블이 충분히 작지 않다면 여러 개의 파티션으로 나누어서 처리하는 것이 가능하지만, NestedLoopJoin 에서는 작은 테이블을 나누면 모든 조합을 확인할 수 없기 때문에 큰 테이블만 나누어서 처리하는 것이 가능하다.&lt;&#x2F;p&gt;
+&lt;p&gt;지금까지 Datafusion 에서 조인이 어떻게 동작하는지 살펴보았다. 이외에도 다양한 최적화 기술들을 이미 지원하고 있고, 앞으로 지원될 예정인 기술들도 많으니 기회될 때마다 소개드리도록 하겠다.&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+    <entry xml:lang="en">
+        <title>[Arrow&#x2F;Datafusion] 동작 과정 분석 (Aggregation)</title>
+        <published>2024-11-12T00:00:00+00:00</published>
+        <updated>2024-11-12T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              Unknown
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://haruband.github.io/datafusion-aggregation/"/>
+        <id>https://haruband.github.io/datafusion-aggregation/</id>
+        
+        <content type="html" xml:base="https://haruband.github.io/datafusion-aggregation/">&lt;p&gt;데이터를 분석할 때 가장 많이 사용하는 기능은 집계일 것이다. 특히, 시계열 데이터를 분석할 때는 시간대별 통계를 자주 사용하기 때문에 무엇보다 집계의 성능이 중요하다. 그래서 오늘은 Datafusion 에서 이러한 집계가 어떤 과정으로 이루어지는지, 그리고 어떤 방법으로 최적화되는지 살펴보도록 하자.&lt;&#x2F;p&gt;
+&lt;p&gt;간단한 집계를 위한 SQL 쿼리를 실행해보자. 아래는 국가별&#x2F;직업별 최소 수입과 평균 수입을 구하는 쿼리이다.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;sql&quot; class=&quot;language-sql z-code&quot;&gt;&lt;code class=&quot;language-sql&quot; data-lang=&quot;sql&quot;&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;select&lt;&#x2F;span&gt; country, job, &lt;span class=&quot;z-support z-function z-aggregate z-sql&quot;&gt;min&lt;&#x2F;span&gt;(salary), &lt;span class=&quot;z-support z-function z-aggregate z-sql&quot;&gt;avg&lt;&#x2F;span&gt;(salary) &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;from&lt;&#x2F;span&gt; table &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;group by&lt;&#x2F;span&gt; country, job
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;위의 쿼리는 아래와 같은 논리 계획으로 변환된다.&lt;&#x2F;p&gt;
+&lt;pre class=&quot;z-code&quot;&gt;&lt;code&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;Aggregate: groupBy=[[table.country, table.job]], aggr=[[min(table.salary), avg(CAST(table.salary AS Float64))]]
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;  TableScan: table projection=[country, job, salary]
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;위의 논리 계획은 테이블에서 세 개의 컬럼[country, job, salary]을 읽어서 두 개의 컬럼[country, job]으로 그룹핑(grouping)한 다음, 그룹별 최소 수입[min(salary)]과 평균 수입[avg(salary)]을 구하는 것이다. 위의 논리 계획은 아래와 같은 실행 계획으로 변환된다.&lt;&#x2F;p&gt;
+&lt;pre class=&quot;z-code&quot;&gt;&lt;code&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;AggregateExec: mode=Single, gby=[country@0 as country, job@1 as job], aggr=[min(table.salary), avg(table.salary)]
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;  CsvExec: file_groups={1 group: [[salary.csv]]}, projection=[country, job, salary], has_header=true
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;위의 실행 계획은 데이터(CSV) 파일을 읽는 &lt;strong&gt;CsvExec&lt;&#x2F;strong&gt; 실행 계획과 모든 입력을 받아서 집계를 구하는 &lt;strong&gt;AggregateExec&lt;&#x2F;strong&gt; 실행 계획으로 구성되어 있다. AggregateExec 실행 계획에서 집계를 구하는 방식은 아래 그림처럼 전달받은 모든 데이터를 그룹핑한 후 최소 수입과 평균 수입을 계산하는 것이다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;datafusion-aggregation&#x2F;.&#x2F;aggregate0.png&quot; alt=&quot;aggregate0.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;위의 실행 계획은 어떤 문제를 가지고 있을까? 입력 데이터의 크기가 커지면 하나의 파티션에서 모든 작업을 처리하는 것은 굉장히 오래 걸릴 것이다. 그렇다면 이를 나누어서 처리할 수 있는 방법은 없을까? 이를 해결하기 위해 Datafusion 은 최종 집계를 구하기 전에 부분 집계를 구하는 방식을 제공하고 있다. (대부분의 SQL 엔진이 비슷한 기능을 제공하고 있다.) 아래는 두 개의 파티션을 사용하도록 설정했을 때의 실행 계획이다.&lt;&#x2F;p&gt;
+&lt;pre class=&quot;z-code&quot;&gt;&lt;code&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;AggregateExec: mode=Final, gby=[country@0 as country, job@1 as job], aggr=[min(table.salary), avg(table.salary)]
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;  CoalescePartitionsExec
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;    AggregateExec: mode=Partial, gby=[country@0 as country, job@1 as job], aggr=[min(table.salary), avg(table.salary)]
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      RepartitionExec: partitioning=RoundRobinBatch(2), input_partitions=1
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;        CsvExec: file_groups={1 group: [[salary.csv]]}, projection=[country, job, salary], has_header=true
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;위의 실행 계획은 데이터 파일을 읽어서(CsvExec) 라운드로빈 방식으로 두 개의 파티션으로 나눈 다음(RepartitionExec) 각각 부분 집계를 구하고(AggregateExec), 이를 하나의 파티션으로 합친 다음(CoalescePartitionsExec) 최종 집계를 구한다(AggregateExec). 아래 그림을 보면 중간에 부분 집계가 추가된 것을 볼 수 있다. (최소값의 부분 집계는 최소값이지만, 평균값의 부분 집계는 합과 개수이고 최종 집계에서 합을 개수로 나누어서 평균값을 구한다.)&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;datafusion-aggregation&#x2F;.&#x2F;aggregate1.png&quot; alt=&quot;aggregate1.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;위의 실행 계획은 어떤 문제를 가지고 있을까? 부분 집계를 병렬로 구하는 것은 좋지만, 최종 집계를 하나의 파티션으로 처리하는 것은 아쉬워보인다. Datafusion 에서 이를 어떻게 개선하는지 아래 실행 계획을 보면서 분석해보자.&lt;&#x2F;p&gt;
+&lt;pre class=&quot;z-code&quot;&gt;&lt;code&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;AggregateExec: mode=FinalPartitioned, gby=[country@0 as country, job@1 as job], aggr=[min(table.salary), avg(table.salary)]
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;  RepartitionExec: partitioning=Hash([country@0, job@1], 2), input_partitions=2
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;    AggregateExec: mode=Partial, gby=[country@0 as country, job@1 as job], aggr=[min(table.salary), avg(table.salary)]
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      RepartitionExec: partitioning=RoundRobinBatch(2), input_partitions=1
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;        CsvExec: file_groups={1 group: [[salary.csv]]}, projection=[country, job, salary], has_header=true
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;위의 실행 계획을 보면, 두 개의 파티션으로 부분 집계를 구하는 것까진 동일하다. 하지만 그룹 컬럼[country, job]의 해시를 이용하여 파티션이 재분배되는 부분이 추가되었고, 이를 통해 다른 파티션에 존재하는 같은 그룹[country, job]의 부분 집계를 하나의 파티션으로 모아서 최종 집계를 구할 수 있게 된다. 아래 그림을 보면, 다른 파티션에서 부분 집계를 구한 그룹(japan, sales)이 최종 집계를 구할때는 하나의 파티션으로 모인 것을 볼 수 있다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;datafusion-aggregation&#x2F;.&#x2F;aggregate2.png&quot; alt=&quot;aggregate2.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;이렇게 부분 집계를 구한 다음 최종 집계를 구하는 것이 항상 좋은 성능을 보여줄까? 그렇지는 않다. 위의 예제를 보더라도, 입력값의 개수는 6 개인데, 부분 집계가 5 개이고 최종 집계가 4 개이다. 이런 경우라면 부분 집계를 구하지 않고 바로 최종 집계를 구하는 것이 좋지 않을까? 어떤 방식이 좋을지는 입력 데이터에 굉장히 의존적이기 때문에 Datafusion 에서는 부분 집계를 구하는 동안 주기적으로 여러 가지 상황을 체크해서 부분 집계를 구하는 것을 중단할지 판단한다. 예를 들어 그룹의 개수와 입력값의 개수를 비교하여 일정 비율이 넘으면 부분 집계를 중단시키는 것이 가능하다. (그룹의 개수가 많아질수록 그룹당 하나씩 생성되는 Accumulator 가 많아지는데 그룹당 누산되는 입력값의 개수가 적어지면 효율이 굉장히 떨어진다.)&lt;&#x2F;p&gt;
+&lt;p&gt;스트리밍 데이터에 대한 집계를 구하는 것도 가능한데, 일반적인 집계는 사용할 수 없고 부분 혹은 전체 정렬된 그룹에 대해서만 집계를 구할 수 있다. 데이터가 끝없이 들어오더라도 그룹이 정렬되어 있다면 다음 그룹이 들어오기 시작할때부터는 이전 그룹은 더 이상 새로운 입력값이 들어오지 않는 것이 보장되기 때문이다. 일반적으로 스트리밍 데이터는 시간 순서로 정렬된 경우가 많기 때문에 대부분의 경우 어렵지 않게 집계를 구할 수 있다.&lt;&#x2F;p&gt;
+&lt;p&gt;지금까지 Datafusion 이 집계를 어떻게 구하는지 살펴보았다. 이외에도 다양한 기능들을 제공하고 있으니 본인이 다루고 있는 데이터의 특성과 환경에 맞게 설정해서 사용한다면 굉장히 만족스러운 결과를 얻을 수 있을 것으로 기대된다.&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+    <entry xml:lang="en">
+        <title>[Arrow&#x2F;Datafusion] 동작 과정 분석</title>
+        <published>2024-11-05T00:00:00+00:00</published>
+        <updated>2024-11-05T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              Unknown
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://haruband.github.io/datafusion-overview/"/>
+        <id>https://haruband.github.io/datafusion-overview/</id>
+        
+        <content type="html" xml:base="https://haruband.github.io/datafusion-overview/">&lt;p&gt;&lt;a rel=&quot;noopener&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;apache&#x2F;datafusion&quot;&gt;Datafusion&lt;&#x2F;a&gt; 은 최근 빅데이터 분야에서 널리 사용되고 있는 &lt;a rel=&quot;noopener&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;arrow.apache.org&#x2F;&quot;&gt;Arrow&lt;&#x2F;a&gt; 를 이용하여 Rust 기반으로 개발 중인 임베딩 SQL 엔진이다. 이미 다양한 분야에서 활용되고 있는 &lt;a rel=&quot;noopener&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;duckdb&#x2F;duckdb&quot;&gt;DuckDB&lt;&#x2F;a&gt; 와 유사한 목적을 가지고 있지만, Rust 로 개발 중이기 때문에 메모리 관리가 편리하고 확장성이 굉장히 뛰어나다는 장점이 있다. 이러한 장점들로 인해 최근 Datafusion 을 이용하여 기존 솔루션보다 탁월한 성능을 보여주는 새로운 오픈소스들이 많이 등장하고 있고, 특히 Java&#x2F;Scala 중심의 빅데이터 분야에서 많은 변화를 주도할 것으로 기대된다. 그럼 이제 Datafusion 에 대해 자세히 살펴보도록 하자.&lt;&#x2F;p&gt;
+&lt;p&gt;우선, 오랜 시간 널리 사용되고 있는 Spark 와 비교했을 때 어떤 부분이 차이가 있는지 살펴보도록 하자. (Spark 와 비교하는 이유는, Datafusion 을 Pandas 와 비교할 수도 있겠지만 개인적으로 Spark 의 대체제로 활용하고 있기 때문이다.)&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;seolci-unyeong&quot;&gt;설치&#x2F;운영&lt;&#x2F;h3&gt;
+&lt;p&gt;Spark 는 대규모 클러스터 환경에서 빅데이터를 처리하기 위해 개발되었기 때문에 설치와 운영에 높은 전문 지식과 노력이 필요하다. 하지만 Datafusion 은 어디에나 임베딩할 수 있기 때문에 비교적 간단하게 사용할 수 있고, 수백대에서 수천대의 대규모 클러스터에서 처리하는 데이터를 처리하긴 힘들지만 수십대의 클러스터에서 처리하는 데이터는 처리할 수 있다. 그리고 서버에 설치할 수 있는 CPU 와 메모리가 늘어날수록 처리할 수 있는 데이터는 지속적으로 늘어날 것이다. (참고로, Datafusion 을 &lt;a rel=&quot;noopener&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;apache&#x2F;datafusion-ray&quot;&gt;분산 클러스터 환경에서 사용하려는 시도&lt;&#x2F;a&gt;도 있긴 하다.)&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;deiteo-gujo&quot;&gt;데이터 구조&lt;&#x2F;h3&gt;
+&lt;p&gt;Spark 는 기본적으로 Row 기반으로 동작하기 때문에 Column 단위로 분석하는 요청에서는 효율이 떨어진다. 이러한 문제를 해결하기 위해 C++ 를 이용한 Column 기반의 &lt;a rel=&quot;noopener&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;www.databricks.com&#x2F;product&#x2F;photon&quot;&gt;새로운 엔진&lt;&#x2F;a&gt;과 Arrow 기반의 &lt;a rel=&quot;noopener&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;facebookincubator&#x2F;velox&quot;&gt;Velox&lt;&#x2F;a&gt; 를 실행 엔진으로 사용하려는 시도가 있지만, 아직 여러 가지 제약 사항이 많다. 하지만 Arrow 기반의 Datafusion 은 Column 단위로 동작하기 때문에 대부분의 분석 쿼리에서 효율적으로 동작한다. 여기에는 연속된 메모리에 대한 반복 처리를 자동으로 Vectorization 해주는 LLVM 의 AutoVectorization 이 큰 역할을 하고 있다.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;memori-gwanri&quot;&gt;메모리 관리&lt;&#x2F;h3&gt;
+&lt;p&gt;Java 에서 메모리 관리를 도와주는 GC (Garbage Collection) 는 다양한 문제를 유발한다. GC 가 동작할 때마다 시스템 자원을 낭비하고 예측할 수 없는 지연시간을 발생시키기도 하며, 예상하기 힘든 OOM (Out-Of-Memory) 의 원인이 되기도 한다. 그리고 더 많은 메모리가 필요해서 JVM 이 사용하는 힙(Heap)의 크기를 늘리면 GC 에 의해 관리되는 영역도 늘어나기 때문에 앞서 언급한 문제들이 더욱 심각해질 수 있다. 하지만 Rust 는 GC 없이 메모리 안정성을 보장하기 때문에 필요한 만큼 시스템 메모리를 사용할 수 있고, 스왑 메모리도 효과적으로 사용할 수 있다. Java 는 GC 에 의해 메모리를 적절히 정리하지 않으면 예기치 못한 OOM 이 발생하지만, Rust 는 커널이 직접 제공하는 스왑 기능 덕분에 충분한 시스템 메모리와 스왑 메모리만 있다면 OOM 은 발생하지 않는다.&lt;&#x2F;p&gt;
+&lt;h3 id=&quot;silhaeng-bangsig&quot;&gt;실행 방식&lt;&#x2F;h3&gt;
+&lt;p&gt;Java 는 바이트 코드로 컴파일되어 배포되기 때문에 성능을 높이기 위해 JIT (Just-In-Time) 방식을 사용하고 있다. 이는 자주 실행되는 바이트 코드를 런타임에 컴파일하여 네이티브 코드(x86, arm, ...)로 변환하는 기술인데, 이를 위한 준비 과정이 필요하며 LLVM 과 같은 컴파일러에 비해 충분한 최적화가 이루어지지 않는 문제가 있다. 하지만 Rust 는 네이티브 코드로 컴파일되어 배포되기 때문에 LLVM 이 제공하는 높은 수준의 최적화를 충분히 활용할 수 있다.&lt;&#x2F;p&gt;
+&lt;p&gt;아래 그림은 Datafusion 이 동작하는 방식을 간단히 보여주고 있다. (대부분의 SQL 엔진이 비슷한 방식으로 동작한다.)&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;datafusion-overview&#x2F;.&#x2F;overview.png&quot; alt=&quot;overview.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;동작 과정을 정리해보면 아래와 같다.&lt;&#x2F;p&gt;
+&lt;ol&gt;
+&lt;li&gt;SQL 쿼리 혹은 DataFrame 을 논리 계획으로 변환&lt;&#x2F;li&gt;
+&lt;li&gt;논리 계획 최적화 (ConstantFolding, CommonSubexpressionElimination, ...)&lt;&#x2F;li&gt;
+&lt;li&gt;논리 계획을 실행 계획으로 변환&lt;&#x2F;li&gt;
+&lt;li&gt;실행 계획 최적화 (Sort, Aggregation, Join, ...)&lt;&#x2F;li&gt;
+&lt;li&gt;실행 계획에서 스트림 추출&lt;&#x2F;li&gt;
+&lt;li&gt;스트림에서 데이터 수집&lt;&#x2F;li&gt;
+&lt;&#x2F;ol&gt;
+&lt;p&gt;일반적인 컴파일러가 동작하는 방식과 유사한 부분이 많은데, 논리 계획(LogicalPlan)은 상위 수준 중간 언어(IR)라고 보면 되고 실행 계획(ExecutionPlan)은 하위 수준 중간 언어라고 보면 된다. 논리 계획과 실행 계획은 실제 데이터를 수집 및 처리하는 역할을 하는 스트림(Stream)을 생성하고, 하나의 스트림은 하나의 파티션(데이터)을 하나의 스레드에서 처리한다고 생각하면 간단하다. 데이터는 현재 표준처럼 널리 사용되고 있는 Arrow 의 RecordBatch 형식을 사용한다.&lt;&#x2F;p&gt;
+&lt;p&gt;간단한 예제를 보면서, SQL 쿼리가 논리 계획과 실행 계획으로 어떻게 변환되는지, 최적화에 의해 실행 계획과 스트림이 어떻게 변환되는지 살펴보도록 하자.&lt;&#x2F;p&gt;
+&lt;p&gt;데이터(Parquet) 파일을 읽어서 정렬한 후 두 개의 컬럼을 보여주는 간단한 SQL 쿼리를 실행해보자.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;sql&quot; class=&quot;language-sql z-code&quot;&gt;&lt;code class=&quot;language-sql&quot; data-lang=&quot;sql&quot;&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;select&lt;&#x2F;span&gt; company,score &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;from&lt;&#x2F;span&gt; table &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;order by&lt;&#x2F;span&gt; score &lt;span class=&quot;z-keyword z-other z-order z-sql&quot;&gt;asc&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;위의 쿼리는 아래와 같은 논리 계획으로 변환된다.&lt;&#x2F;p&gt;
+&lt;pre class=&quot;z-code&quot;&gt;&lt;code&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;Sort: table.score ASC NULLS LAST
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;  TableScan: table projection=[company, score]
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;위의 논리 계획은 테이블에서 두 개의 컬럼[company, score]을 읽어서 전달하는 부분(TableScan)과 전달받은 데이터를 정렬하는 부분(Sort)으로 구성되어 있다. (실제 데이터는 아래에서 위로 전달된다.) 위의 논리 계획은 아래와 같은 실행 계획으로 변환된다.&lt;&#x2F;p&gt;
+&lt;pre class=&quot;z-code&quot;&gt;&lt;code&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;SortExec: expr=[score@1 ASC NULLS LAST]
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;  ParquetExec: file_groups={1 group: [[file0.parquet, file1.parquet]]}, projection=[company, score]
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;테이블을 읽는 논리 계획(TableScan)은 데이터(Parquet) 파일의 형식에 따라 &lt;strong&gt;ParquetExec&lt;&#x2F;strong&gt; 실행 계획으로 변환되었고, 정렬하는 논리 계획(Sort)은 여러 가지 상황에 따라 &lt;strong&gt;SortExec&lt;&#x2F;strong&gt; 실행 계획으로 변환되었다. 논리 계획도 마찬가지이지만, 최적화 옵션이나 여러 가지 상황에 따라서 실행 계획은 달라진다. 위의 실행 계획이 실행되면, SortExec 가 아래 그림의 SortStream 을, ParquetExec 가 FileStream 을 생성한다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;datafusion-overview&#x2F;.&#x2F;streams0.png&quot; alt=&quot;streams0.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;체인 형태로 연결된 스트림은 유효한 데이터가 더 이상 없을때까지 반복적으로 실행되면서 데이터를 뒤에서 앞으로 전달하는 방식으로 동작한다. FileStream 은 두 개의 데이터 파일을 읽어서 SortStream 으로 전달하고, SortStream 은 모든 데이터를 수집한 다음 정렬한 결과를 전달한다.&lt;&#x2F;p&gt;
+&lt;p&gt;위의 예제를 자세히 살펴보면, 두 개의 파일을 하나의 스트림에서 읽는 것을 볼 수 있다. 이를 조금 더 개선할 수 있는 방법은 없을까? 두 개의 파일을 두 개의 스트림에서 각각 읽는다면 성능이 개선될 수 있지 않을까? Datafusion 에서는 파티션 개수를 조절하여 이를 개선할 수 있다. 아래는 두 개의 파티션을 사용하도록 설정했을 때의 실행 계획을 보여준다.&lt;&#x2F;p&gt;
+&lt;pre class=&quot;z-code&quot;&gt;&lt;code&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;SortExec: expr=[score@1 ASC NULLS LAST]
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;  CoalescePartitionsExec
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;    ParquetExec: file_groups={2 groups: [[file0.parquet], [file1.parquet]]}, projection=[company, score]
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;두 개의 파티션을 사용하도록 설정했더니 ParquetExec 에서 두 개의 파일 그룹이 생성된 것을 볼 수 있다. 이 실행 계획은 아래 그림처럼 각각의 파일 그룹을 처리하는 두 개의 FileStream 을 생성한다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;datafusion-overview&#x2F;.&#x2F;streams1.png&quot; alt=&quot;streams1.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;이제 두 개의 FileStream 은 각각 하나의 데이터 파일을 읽고, CoalesceStream 에서 두 개의 FileStream 을 하나로 합쳐서 SortStream 에 전달한다.&lt;&#x2F;p&gt;
+&lt;p&gt;위의 실행 계획은 어떤 문제를 가지고 있을까? 여러 데이터 파일을 병렬로 읽는 부분은 좋지만, 이를 하나로 합쳐서 정렬하는 부분은 개선의 여지가 있어보인다. Datafusion 에서는 파티션별로 먼저 정렬하는 병합 정렬(MergeSort)을 지원하기 때문에 이를 활용하여 실행 계획을 조금 더 개선해보자.&lt;&#x2F;p&gt;
+&lt;pre class=&quot;z-code&quot;&gt;&lt;code&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;SortPreservingMergeExec: [score@1 ASC NULLS LAST]
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;  SortExec: expr=[score@1 ASC NULLS LAST]
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;    ParquetExec: file_groups={2 groups: [[file0.parquet], [file1.parquet]]}, projection=[company, score]
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;위의 실행 계획은 아래와 같은 스트림을 생성한다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;datafusion-overview&#x2F;.&#x2F;streams2.png&quot; alt=&quot;streams2.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;두 개의 FileStream 이 각각 하나의 데이터 파일을 읽고 SortStream 에서 각각 정렬한 다음, SortPreservingMergeStream 이 합쳐서 최종적으로 정렬한다.&lt;&#x2F;p&gt;
+&lt;p&gt;지금까지 Datafusion 이 어떻게 동작하는지를 하나의 예제를 통해 살펴보았다. 이외에도 다양한 쿼리와 최적화를 지원하고 있고, 이미 충분히 좋은 성능을 보여주고 있지만 굉장히 활발하게 새로운 기능이 추가되고 개선되고 있다. Datafusion 을 기반으로 새롭게 등장한 여러 솔루션처럼 Datafusion 은 여러 가지 문제에 대한 새로운 가능성으로 충분히 자리매김할 것으로 기대된다.&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+</feed>
