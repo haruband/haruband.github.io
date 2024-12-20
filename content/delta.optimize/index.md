@@ -1,7 +1,7 @@
 +++
 title = "[Delta] 델타로그 최적화"
-date = 2024-01-08T00:00:00Z
-updated = 2024-01-08T00:00:00Z
+date = 2022-01-08T00:00:00Z
+updated = 2022-01-08T00:00:00Z
 draft = false
 
 [taxonomies]

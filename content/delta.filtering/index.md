@@ -1,7 +1,7 @@
 +++
 title = "[Delta] 읽기 성능 최적화"
-date = 2024-01-15T00:00:00Z
-updated = 2024-01-15T00:00:00Z
+date = 2022-01-15T00:00:00Z
+updated = 2022-01-15T00:00:00Z
 draft = false
 
 [taxonomies]
