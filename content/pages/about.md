@@ -7,10 +7,13 @@ draft = false
 
 ### 잉클 (CTO, 2022/03 ~)
 
-- 빅데이터 엔진 개발 (Arrow, Datafusion, ...)
-- 레이크하우스 아키텍처 설계 및 개발 (Iceberg, DeltaLake)
+- 실시간 빅데이터 엔진 개발 (Arrow, Datafusion, ...)
+- 레이크하우스 아키텍처 설계 및 개발 (DeltaLake, Iceberg)
+- 실시간 AI 추론 플랫폼 개발
+  - 시계열 데이터 추론 (Arrow/Datafusion, ...)
+  - 이미지 추론 (S3, ...)
 - 쿠버네티스 클러스터 구축 및 최적화
-  - Kubeadm 을 이용한 쿠버네티스 클러스터 구축
+  - Kubeadm 을 이용한 쿠버네티스 클러스터 구축 (Ansible)
   - 메모리, 네트워킹 및 스토리지 최적화 (Cilium/eBPF, ...)
 
 ### 바텍 (SRE/DevOps/DataOps/MLOps, 2019/03 ~ 2022/02)
