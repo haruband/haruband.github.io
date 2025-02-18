@@ -5,9 +5,13 @@ template = "pages.html"
 draft = false
 +++
 
-### 잉클 (CTO, 2022/03 ~)
+### 잉클 (DataOps/DevOps/CTO, 2022/03 ~)
 
 - 실시간 빅데이터 엔진 개발 (Arrow, Datafusion, ...)
+  - Rust 기반 고성능 쿼리 엔진 개발 및 최적화 (Datafusion)
+  - 스토리지 엔진 최적화 (DeltaLake, ...)
+  - 다양한 프로토콜 지원 (FlightSQL, PostgreSQL, RestSQL)
+  - OPA 기반 접근 제어
 - 레이크하우스 아키텍처 설계 및 개발 (DeltaLake, Iceberg)
 - 실시간 AI 추론 플랫폼 개발
   - 시계열 데이터 추론 (Arrow/Datafusion, ...)
