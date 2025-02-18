@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+    <title>CodeBook - Spark</title>
+    <subtitle>Haruband&#x27;s TechBlog</subtitle>
+    <link rel="self" type="application/atom+xml" href="https://haruband.github.io/tags/spark/atom.xml"/>
+    <link rel="alternate" type="text/html" href="https://haruband.github.io"/>
+    <generator uri="https://www.getzola.org/">Zola</generator>
+    <updated>2024-12-16T00:00:00+00:00</updated>
+    <id>https://haruband.github.io/tags/spark/atom.xml</id>
+    <entry xml:lang="en">
+        <title>[Arrow&#x2F;Datafusion] 성능 평가 (Spark)</title>
+        <published>2024-12-16T00:00:00+00:00</published>
+        <updated>2024-12-16T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              Unknown
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://haruband.github.io/datafusion-benchmark/"/>
+        <id>https://haruband.github.io/datafusion-benchmark/</id>
+        
+        <content type="html" xml:base="https://haruband.github.io/datafusion-benchmark/">&lt;p&gt;&lt;a rel=&quot;noopener&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;apache&#x2F;datafusion&quot;&gt;Datafusion&lt;&#x2F;a&gt; 은 &lt;a rel=&quot;noopener&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;arrow.apache.org&quot;&gt;Arrow&lt;&#x2F;a&gt; 를 이용하여 Rust 기반으로 개발 중인 임베딩 SQL 엔진이다. 그래서 Scala 기반으로 개발되어 JVM 위에서 동작하는 &lt;a rel=&quot;noopener&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;spark.apache.org&quot;&gt;Spark&lt;&#x2F;a&gt; 에 비해 아래와 같은 장점을 가진다.&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;GC 없이 메모리 안정성 보장&lt;&#x2F;li&gt;
+&lt;li&gt;컬럼 기반 데이터 포맷 사용 (Arrow)&lt;&#x2F;li&gt;
+&lt;li&gt;LLVM 기반 최적화 (Vectorization, ...)&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;그렇다면 이러한 장점들이 실제 성능에는 얼마나 영향을 주는지 알아보도록 하자. 오늘은 단일 머신에서의 성능만을 비교하고, 추후에 &lt;a rel=&quot;noopener&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;datafusion.apache.org&#x2F;ballista&quot;&gt;Ballista&lt;&#x2F;a&gt; 와 같은 Datafusion 기반의 분산 처리 기술을 이용하여 분산 처리 성능도 비교해보도록 하겠다.&lt;&#x2F;p&gt;
+&lt;p&gt;실험은 OLAP 성능 검증을 위해 자주 사용되는 TPC-H (SF1000) 를 이용하였다. 실험 결과는 처리 시간과 메모리 사용량을 이용하여 분석하였으며, 최대 메모리 사용량(JVM)에 영향을 많이 받는 Spark 는 8 ~ 64 GB 까지 최대 메모리 사용량을 변경해가면서 성능을 측정하였다.&lt;&#x2F;p&gt;
+&lt;p&gt;첫 번째 실험은 하나의 테이블에서 몇 가지 조건절을 이용하여 데이터를 필터링한 다음 합계를 구하는 쿼리(TPC-H-Q6)이다.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;sql&quot; class=&quot;language-sql z-code&quot;&gt;&lt;code class=&quot;language-sql&quot; data-lang=&quot;sql&quot;&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;select&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-support z-function z-aggregate z-sql&quot;&gt;sum&lt;&#x2F;span&gt;(l_extendedprice &lt;span class=&quot;z-variable z-language z-star z-sql&quot;&gt;*&lt;&#x2F;span&gt; l_discount) &lt;span class=&quot;z-keyword z-operator z-assignment z-alias z-sql&quot;&gt;as&lt;&#x2F;span&gt; revenue
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;from&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    lineitem
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;where&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    l_shipdate &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;&amp;gt;=&lt;&#x2F;span&gt; &lt;span class=&quot;z-storage z-type z-sql&quot;&gt;date&lt;&#x2F;span&gt; &lt;span class=&quot;z-string z-quoted z-single z-sql&quot;&gt;&lt;span class=&quot;z-punctuation z-definition z-string z-begin z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;1994-01-01&lt;span class=&quot;z-punctuation z-definition z-string z-end z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;and&lt;&#x2F;span&gt; l_shipdate &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;&amp;lt;&lt;&#x2F;span&gt; &lt;span class=&quot;z-storage z-type z-sql&quot;&gt;date&lt;&#x2F;span&gt; &lt;span class=&quot;z-string z-quoted z-single z-sql&quot;&gt;&lt;span class=&quot;z-punctuation z-definition z-string z-begin z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;1995-01-01&lt;span class=&quot;z-punctuation z-definition z-string z-end z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;and&lt;&#x2F;span&gt; l_discount &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;between&lt;&#x2F;span&gt; &lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;0&lt;&#x2F;span&gt;.&lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;06&lt;&#x2F;span&gt; &lt;span class=&quot;z-keyword z-operator z-math z-sql&quot;&gt;-&lt;&#x2F;span&gt; &lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;0&lt;&#x2F;span&gt;.&lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;01&lt;&#x2F;span&gt; &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;and&lt;&#x2F;span&gt; &lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;0&lt;&#x2F;span&gt;.&lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;06&lt;&#x2F;span&gt; &lt;span class=&quot;z-keyword z-operator z-math z-sql&quot;&gt;+&lt;&#x2F;span&gt; &lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;0&lt;&#x2F;span&gt;.&lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;01&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;and&lt;&#x2F;span&gt; l_quantity &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;&amp;lt;&lt;&#x2F;span&gt; &lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;24&lt;&#x2F;span&gt;;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;아래는 처리 시간을 보여주고 있다. Datafusion 이 Spark 에 비해 대략 10 배 정도 좋은 성능을 보여주고 있다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;datafusion-benchmark&#x2F;.&#x2F;tpch.q6.png&quot; alt=&quot;tpch.q6.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;아래는 실제 메모리 사용량을 측정한 결과이다. Datafusion 은 최대 1.8 GB 정도의 메모리를 사용하였으며, Spark 는 최대 메모리 사용량(-Xmx)이 클수록 실제 메모리 사용량이 커지면서 오히려 성능이 약간 떨어지는 모습을 볼 수 있다. Spark 는 중간 결과나 재활용할 수 있는 데이터를 메모리에 최대한 유지하는 정책을 취하기 때문에 메모리 사용량이 증가하면서 GC(GarbageCollection) 오버헤드를 증가시키는 등 오히려 안 좋은 결과를 보여줄 수 있다. (최대 메모리 사용량이 8 GB 일때는 GC 에 1.5 초를 소요했지만, 64 GB 일때는 2.4 초를 소요했다.)&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;datafusion-benchmark&#x2F;.&#x2F;memory.q6.png&quot; alt=&quot;memory.q6.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;두 번째 실험은 하나의 테이블에서 그룹별 집계를 구하는 쿼리(TPC-H-Q1)이다.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;sql&quot; class=&quot;language-sql z-code&quot;&gt;&lt;code class=&quot;language-sql&quot; data-lang=&quot;sql&quot;&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;select&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    l_returnflag,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    l_linestatus,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-support z-function z-aggregate z-sql&quot;&gt;sum&lt;&#x2F;span&gt;(l_quantity) &lt;span class=&quot;z-keyword z-operator z-assignment z-alias z-sql&quot;&gt;as&lt;&#x2F;span&gt; sum_qty,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-support z-function z-aggregate z-sql&quot;&gt;sum&lt;&#x2F;span&gt;(l_extendedprice) &lt;span class=&quot;z-keyword z-operator z-assignment z-alias z-sql&quot;&gt;as&lt;&#x2F;span&gt; sum_base_price,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-support z-function z-aggregate z-sql&quot;&gt;sum&lt;&#x2F;span&gt;(l_extendedprice &lt;span class=&quot;z-variable z-language z-star z-sql&quot;&gt;*&lt;&#x2F;span&gt; (&lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;1&lt;&#x2F;span&gt; &lt;span class=&quot;z-keyword z-operator z-math z-sql&quot;&gt;-&lt;&#x2F;span&gt; l_discount)) &lt;span class=&quot;z-keyword z-operator z-assignment z-alias z-sql&quot;&gt;as&lt;&#x2F;span&gt; sum_disc_price,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-support z-function z-aggregate z-sql&quot;&gt;sum&lt;&#x2F;span&gt;(l_extendedprice &lt;span class=&quot;z-variable z-language z-star z-sql&quot;&gt;*&lt;&#x2F;span&gt; (&lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;1&lt;&#x2F;span&gt; &lt;span class=&quot;z-keyword z-operator z-math z-sql&quot;&gt;-&lt;&#x2F;span&gt; l_discount) &lt;span class=&quot;z-variable z-language z-star z-sql&quot;&gt;*&lt;&#x2F;span&gt; (&lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;1&lt;&#x2F;span&gt; &lt;span class=&quot;z-keyword z-operator z-math z-sql&quot;&gt;+&lt;&#x2F;span&gt; l_tax)) &lt;span class=&quot;z-keyword z-operator z-assignment z-alias z-sql&quot;&gt;as&lt;&#x2F;span&gt; sum_charge,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-support z-function z-aggregate z-sql&quot;&gt;avg&lt;&#x2F;span&gt;(l_quantity) &lt;span class=&quot;z-keyword z-operator z-assignment z-alias z-sql&quot;&gt;as&lt;&#x2F;span&gt; avg_qty,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-support z-function z-aggregate z-sql&quot;&gt;avg&lt;&#x2F;span&gt;(l_extendedprice) &lt;span class=&quot;z-keyword z-operator z-assignment z-alias z-sql&quot;&gt;as&lt;&#x2F;span&gt; avg_price,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-support z-function z-aggregate z-sql&quot;&gt;avg&lt;&#x2F;span&gt;(l_discount) &lt;span class=&quot;z-keyword z-operator z-assignment z-alias z-sql&quot;&gt;as&lt;&#x2F;span&gt; avg_disc,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-support z-function z-aggregate z-sql&quot;&gt;count&lt;&#x2F;span&gt;(&lt;span class=&quot;z-variable z-language z-star z-sql&quot;&gt;*&lt;&#x2F;span&gt;) &lt;span class=&quot;z-keyword z-operator z-assignment z-alias z-sql&quot;&gt;as&lt;&#x2F;span&gt; count_order
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;from&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    lineitem
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;where&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    l_shipdate &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;&amp;lt;=&lt;&#x2F;span&gt; &lt;span class=&quot;z-storage z-type z-sql&quot;&gt;date&lt;&#x2F;span&gt; &lt;span class=&quot;z-string z-quoted z-single z-sql&quot;&gt;&lt;span class=&quot;z-punctuation z-definition z-string z-begin z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;1998-09-02&lt;span class=&quot;z-punctuation z-definition z-string z-end z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;group by&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    l_returnflag,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    l_linestatus
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;order by&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    l_returnflag,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    l_linestatus;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Datafusion 이 Spark 에 비해 대략 10 ~ 12 배 정도 좋은 성능을 보여주고 있다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;datafusion-benchmark&#x2F;.&#x2F;tpch.q1.png&quot; alt=&quot;tpch.q1.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;Datafusion 은 최대 2 GB 정도의 메모리를 사용하였으며, Spark 는 앞의 실험과 유사한 결과를 보여주지만 그룹별 집계가 메모리 사용량이 많기 때문에 성능이 나빠지는 정도가 훨씬 심해진 것을 볼 수 있다. (최대 메모리 사용량이 8 GB 일때는 GC 에 21 초를 소요했지만, 64 GB 일때는 40 초를 소요했다.)&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;datafusion-benchmark&#x2F;.&#x2F;memory.q1.png&quot; alt=&quot;memory.q1.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;세 번째 실험은 두 개의 테이블을 조인하는 쿼리(TPC-H-Q12)이다. 등가(Equal) 조인을 처리하는 방식은 BroadcastJoin, HashJoin, SortMergeJoin 등이 있는데, 이번 실험에서는 최적화가 충분치 않은 Datafusion 의 SortMergeJoin 과 데이터 크기가 커서 사용할 수 없는 Spark 의 BroadcastJoin 은 제외하고 진행하였다.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;sql&quot; class=&quot;language-sql z-code&quot;&gt;&lt;code class=&quot;language-sql&quot; data-lang=&quot;sql&quot;&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;select&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    l_shipmode,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-support z-function z-aggregate z-sql&quot;&gt;sum&lt;&#x2F;span&gt;(&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;case&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;            &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;when&lt;&#x2F;span&gt; o_orderpriority &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;=&lt;&#x2F;span&gt; &lt;span class=&quot;z-string z-quoted z-single z-sql&quot;&gt;&lt;span class=&quot;z-punctuation z-definition z-string z-begin z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;1-URGENT&lt;span class=&quot;z-punctuation z-definition z-string z-end z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;                &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;or&lt;&#x2F;span&gt; o_orderpriority &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;=&lt;&#x2F;span&gt; &lt;span class=&quot;z-string z-quoted z-single z-sql&quot;&gt;&lt;span class=&quot;z-punctuation z-definition z-string z-begin z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;2-HIGH&lt;span class=&quot;z-punctuation z-definition z-string z-end z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;                &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;then&lt;&#x2F;span&gt; &lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;1&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;            &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;else&lt;&#x2F;span&gt; &lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;0&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;        &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;end&lt;&#x2F;span&gt;) &lt;span class=&quot;z-keyword z-operator z-assignment z-alias z-sql&quot;&gt;as&lt;&#x2F;span&gt; high_line_count,
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-support z-function z-aggregate z-sql&quot;&gt;sum&lt;&#x2F;span&gt;(&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;case&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;            &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;when&lt;&#x2F;span&gt; o_orderpriority &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;&amp;lt;&amp;gt;&lt;&#x2F;span&gt; &lt;span class=&quot;z-string z-quoted z-single z-sql&quot;&gt;&lt;span class=&quot;z-punctuation z-definition z-string z-begin z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;1-URGENT&lt;span class=&quot;z-punctuation z-definition z-string z-end z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;                &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;and&lt;&#x2F;span&gt; o_orderpriority &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;&amp;lt;&amp;gt;&lt;&#x2F;span&gt; &lt;span class=&quot;z-string z-quoted z-single z-sql&quot;&gt;&lt;span class=&quot;z-punctuation z-definition z-string z-begin z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;2-HIGH&lt;span class=&quot;z-punctuation z-definition z-string z-end z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;                &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;then&lt;&#x2F;span&gt; &lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;1&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;            &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;else&lt;&#x2F;span&gt; &lt;span class=&quot;z-constant z-numeric z-sql&quot;&gt;0&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;        &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;end&lt;&#x2F;span&gt;) &lt;span class=&quot;z-keyword z-operator z-assignment z-alias z-sql&quot;&gt;as&lt;&#x2F;span&gt; low_line_count
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;from&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    lineitem
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;join&lt;&#x2F;span&gt; orders on l_orderkey &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;=&lt;&#x2F;span&gt; o_orderkey
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;where&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    l_shipmode &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;in&lt;&#x2F;span&gt; (&lt;span class=&quot;z-string z-quoted z-single z-sql&quot;&gt;&lt;span class=&quot;z-punctuation z-definition z-string z-begin z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;MAIL&lt;span class=&quot;z-punctuation z-definition z-string z-end z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;, &lt;span class=&quot;z-string z-quoted z-single z-sql&quot;&gt;&lt;span class=&quot;z-punctuation z-definition z-string z-begin z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;SHIP&lt;span class=&quot;z-punctuation z-definition z-string z-end z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;)
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;and&lt;&#x2F;span&gt; l_commitdate &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;&amp;lt;&lt;&#x2F;span&gt; l_receiptdate
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;and&lt;&#x2F;span&gt; l_shipdate &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;&amp;lt;&lt;&#x2F;span&gt; l_commitdate
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;and&lt;&#x2F;span&gt; l_receiptdate &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;&amp;gt;=&lt;&#x2F;span&gt; &lt;span class=&quot;z-storage z-type z-sql&quot;&gt;date&lt;&#x2F;span&gt; &lt;span class=&quot;z-string z-quoted z-single z-sql&quot;&gt;&lt;span class=&quot;z-punctuation z-definition z-string z-begin z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;1994-01-01&lt;span class=&quot;z-punctuation z-definition z-string z-end z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    &lt;span class=&quot;z-keyword z-operator z-logical z-sql&quot;&gt;and&lt;&#x2F;span&gt; l_receiptdate &lt;span class=&quot;z-keyword z-operator z-comparison z-sql&quot;&gt;&amp;lt;&lt;&#x2F;span&gt; &lt;span class=&quot;z-storage z-type z-sql&quot;&gt;date&lt;&#x2F;span&gt; &lt;span class=&quot;z-string z-quoted z-single z-sql&quot;&gt;&lt;span class=&quot;z-punctuation z-definition z-string z-begin z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;1995-01-01&lt;span class=&quot;z-punctuation z-definition z-string z-end z-sql&quot;&gt;&amp;#39;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;group by&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    l_shipmode
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;&lt;span class=&quot;z-keyword z-other z-DML z-sql&quot;&gt;order by&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-sql&quot;&gt;    l_shipmode;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;Datafusion 의 BroadcastJoin 이 가장 좋은 성능을 보여주고 있으며, Spark 에 비해 대략 7.6 배 정도 좋은 성능을 보여주고 있다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;datafusion-benchmark&#x2F;.&#x2F;tpch.q12.png&quot; alt=&quot;tpch.q12.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;Datafusion 은 BroadcastJoin 과 HashJoin 에서 2.5 GB 정도의 메모리를 사용하였으며, Spark 는 HashJoin 에서 64 GB 의 메모리도 부족하여 파티션을 두 배(400)로 늘려서 실험하였다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;datafusion-benchmark&#x2F;.&#x2F;memory.q12.png&quot; alt=&quot;memory.q12.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;실험 결과를 종합해보면, Datafusion 이 훨씬 적은 메모리를 사용하면서도 10 배 정도 좋은 성능을 보여주고 있다. 또한, Spark 는 최대 메모리 사용량에 따른 실제 메모리 사용량과 처리 시간을 예측하기 힘들고, 최대 메모리 사용량이 부족하면 예기치 못한 OOM(OutOfMemory) 도 자주 발생하기 때문에 사용하기가 매우 까다롭다.&lt;&#x2F;p&gt;
+&lt;p&gt;마지막으로 Datafusion 이 어떻게 좋은 성능을 보여주는지 살펴보도록 하자.&lt;&#x2F;p&gt;
+&lt;p&gt;첫 번째 이유는 GC 를 사용하지 않기 때문이다. GC 를 사용하면 메모리를 반환하더라도 GC 에 의해 해제되기 전까지 재사용이 불가능하기 때문에 실제 메모리 사용량보다 많은 메모리를 사용할 수 밖에 없고, 실제 메모리 사용량을 정확히 예측하기 어렵다. 그리고 최대 메모리 사용량을 늘리면 GC 에 의해 관리되는 영역이 커지기 때문에 그만큼 오버헤드가 증가하지만, 최대 메모리 사용량을 줄이면 예기치 못한 OOM 이 발생한다. 반면에, GC 를 사용하지 않고 시스템 메모리를 바로 사용하면 메모리를 반환하는 즉시 재사용이 가능하고, 최대 메모리 사용량을 별도로 설정할 필요없이 시스템 메모리를 최대로 활용할 수 있으며 스왑까지 충분히 활용한다면 이론적으로는 OOM 은 발생하지 않는다.&lt;&#x2F;p&gt;
+&lt;p&gt;두 번째 이유는 컬럼 기반 데이터 포맷을 사용하기 때문이다. 이로 인해 캐시 효율이 높아지고, 아래 소개할 LLVM 을 이용한 AutoVectorization 도 가능해진다.&lt;&#x2F;p&gt;
+&lt;p&gt;세 번째 이유는 LLVM 을 이용하여 최적화하기 때문이다. Spark 는 바이트코드로 배포되어 JIT(JustInTime) 기술을 이용하여 실행되기 때문에 충분한 최적화를 하기가 힘들지만, Datafusion 은 LLVM 으로 컴파일한 네이티브코드를 배포하기 때문에 충분한 최적화를 할 수 있다. 이로 인해 컬럼 기반 데이터 포맷을 사용하는 Datafusion 에서는 각각의 컬럼이 연속된 메모리 공간을 차지하기 때문에 최소한의 노력으로 Vectorization 과 같은 하드웨어 가속을 바로 사용할 수 있게 된다.&lt;&#x2F;p&gt;
+&lt;p&gt;8 개 정수의 합을 구하는 간단한 예제를 통해 LLVM 이 어떻게 연속된 메모리에 대한 반복 연산을 최적화하는지 살펴보자.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;rust&quot; class=&quot;language-rust z-code&quot;&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span class=&quot;z-source z-rust&quot;&gt;&lt;span class=&quot;z-meta z-function z-rust&quot;&gt;&lt;span class=&quot;z-meta z-function z-rust&quot;&gt;&lt;span class=&quot;z-storage z-modifier z-rust&quot;&gt;pub&lt;&#x2F;span&gt; &lt;span class=&quot;z-storage z-type z-function z-rust&quot;&gt;fn&lt;&#x2F;span&gt; &lt;&#x2F;span&gt;&lt;span class=&quot;z-entity z-name z-function z-rust&quot;&gt;loop_simple&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function z-rust&quot;&gt;&lt;span class=&quot;z-meta z-function z-parameters z-rust&quot;&gt;&lt;span class=&quot;z-punctuation z-section z-parameters z-begin z-rust&quot;&gt;(&lt;&#x2F;span&gt;&lt;span class=&quot;z-variable z-parameter z-rust&quot;&gt;a&lt;&#x2F;span&gt;&lt;span class=&quot;z-punctuation z-separator z-rust&quot;&gt;:&lt;&#x2F;span&gt; &lt;span class=&quot;z-keyword z-operator z-rust&quot;&gt;&amp;amp;&lt;&#x2F;span&gt;[&lt;span class=&quot;z-storage z-type z-rust&quot;&gt;i32&lt;&#x2F;span&gt;; 8]&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function z-rust&quot;&gt;&lt;span class=&quot;z-meta z-function z-parameters z-rust&quot;&gt;&lt;span class=&quot;z-punctuation z-section z-parameters z-end z-rust&quot;&gt;)&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function z-rust&quot;&gt; &lt;span class=&quot;z-meta z-function z-return-type z-rust&quot;&gt;&lt;span class=&quot;z-punctuation z-separator z-rust&quot;&gt;-&amp;gt;&lt;&#x2F;span&gt; &lt;span class=&quot;z-storage z-type z-rust&quot;&gt;i32&lt;&#x2F;span&gt;&lt;&#x2F;span&gt; &lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function z-rust&quot;&gt;&lt;span class=&quot;z-meta z-block z-rust&quot;&gt;&lt;span class=&quot;z-punctuation z-section z-block z-begin z-rust&quot;&gt;{&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-rust&quot;&gt;&lt;span class=&quot;z-meta z-function z-rust&quot;&gt;&lt;span class=&quot;z-meta z-block z-rust&quot;&gt;    &lt;span class=&quot;z-storage z-type z-rust&quot;&gt;let&lt;&#x2F;span&gt; &lt;span class=&quot;z-storage z-modifier z-rust&quot;&gt;mut&lt;&#x2F;span&gt; r&lt;span class=&quot;z-punctuation z-separator z-rust&quot;&gt;:&lt;&#x2F;span&gt; &lt;span class=&quot;z-storage z-type z-rust&quot;&gt;i32&lt;&#x2F;span&gt; &lt;span class=&quot;z-keyword z-operator z-assignment z-rust&quot;&gt;=&lt;&#x2F;span&gt; &lt;span class=&quot;z-constant z-numeric z-integer z-decimal z-rust&quot;&gt;0&lt;&#x2F;span&gt;&lt;span class=&quot;z-punctuation z-terminator z-rust&quot;&gt;;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-rust&quot;&gt;&lt;span class=&quot;z-meta z-function z-rust&quot;&gt;&lt;span class=&quot;z-meta z-block z-rust&quot;&gt;    &lt;span class=&quot;z-keyword z-control z-rust&quot;&gt;for&lt;&#x2F;span&gt; var &lt;span class=&quot;z-keyword z-operator z-rust&quot;&gt;in&lt;&#x2F;span&gt; a&lt;span class=&quot;z-punctuation z-accessor z-dot z-rust&quot;&gt;.&lt;&#x2F;span&gt;&lt;span class=&quot;z-support z-function z-rust&quot;&gt;iter&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-group z-rust&quot;&gt;&lt;span class=&quot;z-punctuation z-section z-group z-begin z-rust&quot;&gt;(&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-group z-rust&quot;&gt;&lt;span class=&quot;z-punctuation z-section z-group z-end z-rust&quot;&gt;)&lt;&#x2F;span&gt;&lt;&#x2F;span&gt; &lt;span class=&quot;z-meta z-block z-rust&quot;&gt;&lt;span class=&quot;z-punctuation z-section z-block z-begin z-rust&quot;&gt;{&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-rust&quot;&gt;&lt;span class=&quot;z-meta z-function z-rust&quot;&gt;&lt;span class=&quot;z-meta z-block z-rust&quot;&gt;&lt;span class=&quot;z-meta z-block z-rust&quot;&gt;        r &lt;span class=&quot;z-keyword z-operator z-assignment z-rust&quot;&gt;+=&lt;&#x2F;span&gt; var&lt;span class=&quot;z-punctuation z-terminator z-rust&quot;&gt;;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-rust&quot;&gt;&lt;span class=&quot;z-meta z-function z-rust&quot;&gt;&lt;span class=&quot;z-meta z-block z-rust&quot;&gt;&lt;span class=&quot;z-meta z-block z-rust&quot;&gt;    &lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-block z-rust&quot;&gt;&lt;span class=&quot;z-punctuation z-section z-block z-end z-rust&quot;&gt;}&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-rust&quot;&gt;&lt;span class=&quot;z-meta z-function z-rust&quot;&gt;&lt;span class=&quot;z-meta z-block z-rust&quot;&gt;    r
+&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-rust&quot;&gt;&lt;span class=&quot;z-meta z-function z-rust&quot;&gt;&lt;span class=&quot;z-meta z-block z-rust&quot;&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-block z-rust&quot;&gt;&lt;span class=&quot;z-punctuation z-section z-block z-end z-rust&quot;&gt;}&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;아래는 위의 코드를 최적화 없이 컴파일한 결과이다. 많은 명령어와 메모리 접근이 빈번하게 발생하는 것을 볼 수 있다.&lt;&#x2F;p&gt;
+&lt;pre class=&quot;z-code&quot;&gt;&lt;code&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;       0: 48 83 ec 38                   subq  $56, %rsp
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;       4: 48 89 7c 24 28                movq  %rdi, 40(%rsp)
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;       9: c7 44 24 0c 00 00 00 00       movl  $0, 12(%rsp)
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      11: be 08 00 00 00                movl  $8, %esi
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      16: ff 15 00 00 00 00             callq *(%rip)
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      1c: 48 89 c7                      movq  %rax, %rdi
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      1f: 48 89 d6                      movq  %rdx, %rsi
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      22: ff 15 00 00 00 00             callq *(%rip)
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      28: 48 89 44 24 10                movq  %rax, 16(%rsp)
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      2d: 48 89 54 24 18                movq  %rdx, 24(%rsp)
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      32: 48 8d 7c 24 10                leaq  16(%rsp), %rdi
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      37: ff 15 00 00 00 00             callq *(%rip)
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      3d: 48 89 44 24 20                movq  %rax, 32(%rsp)
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      42: 48 8b 54 24 20                movq  32(%rsp), %rdx
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      47: b8 01 00 00 00                movl  $1, %eax
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      4c: 31 c9                         xorl  %ecx, %ecx
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      4e: 48 83 fa 00                   cmpq  $0, %rdx
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      52: 48 0f 44 c1                   cmoveq  %rcx, %rax
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      56: 48 83 f8 00                   cmpq  $0, %rax
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      5a: 75 09                         jne 0x65
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      5c: 8b 44 24 0c                   movl  12(%rsp), %eax
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      60: 48 83 c4 38                   addq  $56, %rsp
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      64: c3                            retq
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      65: 48 8b 74 24 20                movq  32(%rsp), %rsi
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      6a: 48 89 74 24 30                movq  %rsi, 48(%rsp)
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      6f: 48 8d 7c 24 0c                leaq  12(%rsp), %rdi
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      74: 48 8d 15 00 00 00 00          leaq  (%rip), %rdx
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      7b: e8 00 00 00 00                callq 0x80
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      80: eb b0                         jmp 0x32
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      ...
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;아래는 Vectorization 이 적용된 결과이다. 위의 코드에 비해 훨씬 적은 명령어와 메모리 접근이 발생하는 것을 볼 수 있다.&lt;&#x2F;p&gt;
+&lt;pre class=&quot;z-code&quot;&gt;&lt;code&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;       0: f3 0f 6f 07                   movdqu  (%rdi), %xmm0
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;       4: f3 0f 6f 4f 10                movdqu  16(%rdi), %xmm1
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;       9: 66 0f fe c8                   paddd   %xmm0, %xmm1
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;       d: 66 0f 70 c1 ee                pshufd  $238, %xmm1, %xmm0
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      12: 66 0f fe c1                   paddd   %xmm1, %xmm0
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      16: 66 0f 70 c8 55                pshufd  $85, %xmm0, %xmm1
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      1b: 66 0f fe c8                   paddd   %xmm0, %xmm1
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      1f: 66 0f 7e c8                   movd    %xmm1, %eax
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      23: c3                            retq
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;지금까지 몇 가지 실험을 통해 Datafusion 과 Spark 의 성능을 검증 및 분석해보았다. Datafusion 은 아직 공개된지 오래되지 않았고, 매우 활발하게 개발 중이기 때문에 앞으로 더 좋은 성능을 보여줄 것으로 기대하고 있다. 그리고 Spark 와 Trino 도 자바의 한계를 벗어나기 위해 핵심 쿼리 엔진을 &lt;a rel=&quot;noopener&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;www.databricks.com&#x2F;product&#x2F;photon&quot;&gt;Photon&lt;&#x2F;a&gt; 이나 &lt;a rel=&quot;noopener&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;facebookincubator&#x2F;velox&quot;&gt;Velox&lt;&#x2F;a&gt; 로 교체하려는 시도를 하고 있고, &lt;a rel=&quot;noopener&quot; target=&quot;_blank&quot; href=&quot;https:&#x2F;&#x2F;github.com&#x2F;apache&#x2F;datafusion-comet&quot;&gt;Spark 의 쿼리 엔진을 Datafusion 으로 교체하려는 시도&lt;&#x2F;a&gt;도 이미 진행 중이기 때문에 앞으로 많은 변화가 있을 것으로 기대된다.&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+    <entry xml:lang="en">
+        <title>[K8S&#x2F;Spark] 메모리 최적화 (Swap)</title>
+        <published>2021-06-21T00:00:00+00:00</published>
+        <updated>2021-06-21T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              Unknown
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://haruband.github.io/k8s-spark-optimize-swap/"/>
+        <id>https://haruband.github.io/k8s-spark-optimize-swap/</id>
+        
+        <content type="html" xml:base="https://haruband.github.io/k8s-spark-optimize-swap/">&lt;p&gt;대표적인 빅데이터 처리 기술인 스파크(Spark)는 중간 결과를 하둡(Hadoop)처럼 디스크에 저장하지 않고 메모리에만 저장함으로써 놀랄만한 성능 개선을 가져왔다. 하지만 그만큼 메모리 사용량이 늘어났고, 메모리 관리를 어렵게 만들었다. 이는 다양한 서비스들과 스파크를 동시에 운영하는 쿠버네티스(K8S) 환경에서 더 심각한 문제가 될 수 있으며, 오늘은 최근 쿠버네티스에서도 지원하기 시작한 스왑(Swap)을 이용하여 이러한 문제를 어떻게 해결하였는지 소개하고자 한다.&lt;&#x2F;p&gt;
+&lt;p&gt;우선, 리눅스 커널이 메모리를 어떻게 관리하는지 간단히 살펴보자.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;peiji-kaesi-beopeo-kaesi&quot;&gt;페이지 캐시&#x2F;버퍼 캐시&lt;&#x2F;h2&gt;
+&lt;p&gt;페이지 캐시는 파일의 데이터를 보관하는 메모리이고, 버퍼 캐시는 디렉토리의 파일 목록, 아이노드(Inode) 등을 보관하는 메모리이다. 이는 원본 데이터가 디스크에 있기 때문에 반환이 용이하다. 캐시가 수정되었을 때만 반영(Writeback)을 먼저 해야하고, 수정되지 않았을 때는 바로 반환할 수 있다.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;igmyeong-peiji&quot;&gt;익명 페이지&lt;&#x2F;h2&gt;
+&lt;p&gt;일반적으로 힙(Process&#x2F;JVM Heap) 영역으로 사용되는 메모리이다. 메모리가 원본 데이터이기 때문에 스왑이 없으면 반환 자체를 할 수 없다. 스왑이 있으면 스왑 영역에 공간을 할당받아서 원본 데이터를 반영(Writeback)한 후 반환할 수 있다. 성능 개선을 위해 중간 결과를 메모리에만 저장하는 스파크가 가장 많이 사용하는 메모리이다.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;keoneol-memori&quot;&gt;커널 메모리&lt;&#x2F;h2&gt;
+&lt;p&gt;커널 스택, 페이지 테이블&#x2F;디렉토리, 슬랩(Slab) 등 커널 내부에서 사용되는 메모리이다. 대부분 반환이 불가능한 메모리이지만, 페이지 캐시와 익명 페이지에 비해 사용량이 매우 적기 때문에 일반적으로는 크게 신경쓰지 않아도 된다.&lt;&#x2F;p&gt;
+&lt;p&gt;다음으로, 쿠버네티스 환경에서 스파크를 운영할 때 메모리 관련해서 발생하는 다양한 문제들에 대해서도 한번 살펴보자.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;jvm-oom-out-of-memory&quot;&gt;JVM OOM(Out-Of-Memory)&lt;&#x2F;h2&gt;
+&lt;p&gt;스칼라(Scala)로 개발된 스파크는 JVM 위에서 동작하기 때문에 JVM 이 사용할 최대 힙(Heap)의 크기를 지정해야 한다. 이 값이 실제 최대 사용량보다 작으면 OOM(JVM) 에 의해 해당 작업이 종료되고, 너무 크면 낭비되는 메모리가 많아질 수 있으니 적절한 값으로 설정하는 것이 중요하다.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;cgroup-oom-out-of-memory&quot;&gt;CGroup OOM(Out-Of-Memory)&lt;&#x2F;h2&gt;
+&lt;p&gt;스파크의 쿠버네티스 스케줄러는 익스큐터(Executor) 파드에 JVM 최대 힙 크기와 메모리 오버헤드 크기 등을 합쳐서 요청량(Requests)과 제한량(Limits)을 적용한다. 그래서 만약 해당 파드가 스왑 없이 익명 페이지를 메모리 한도보다 많이 사용한다면, OOM(CGroup) 에 의해 파드가 종료된다. 파드의 메모리 사용량이 많아지면 지속적으로 메모리를 반환하지만, 스왑이 없으면 익명 페이지는 반환되지 않기 때문이다. (스왑이 있으면 이론적으로는 OOM(CGroup) 은 발생하지 않는다.)&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;process-oom-out-of-memory&quot;&gt;Process OOM(Out-Of-Memory)&lt;&#x2F;h2&gt;
+&lt;p&gt;시스템의 물리 메모리가 부족해지면 커널에 의해 우선순위(oom_score)를 따라서 특정 프로세스가 종료(OOM)된다. 쿠버네티스는 QoS 정책에 따라 우선순위(oom_score_adj)를 지정하기 때문에, 서비스의 중요도에 따라서 QoS 정책을 잘 세워야만 최악의 상황은 면할 수 있다.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;k8s-podeviction&quot;&gt;K8S PodEviction&lt;&#x2F;h2&gt;
+&lt;p&gt;시스템의 물리 메모리가 지정된 값보다 작아지면, Kubelet 은 주기적으로 우선순위가 낮은 파드를 종료시킨다. 기본 설정값이 10 초마다 물리 메모리가 100 MBytes 이하일 때 파드를 추출하는 것인데, 우리의 실험 환경에서는 Kubelet 에 의해 파드가 추출되는 경우는 한번도 없었고 모두 커널에 의해 OOM 으로 종료되었다. 기본 설정값을 변경하거나 실험 환경이 다르면 다른 결과를 보일 수도 있겠지만, 이러한 환경에서는 현실적으로 실효성이 없다고 볼 수 있다.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;system-overload&quot;&gt;System Overload&lt;&#x2F;h2&gt;
+&lt;p&gt;스왑이 없으면 반환되지 않는 익명 페이지 사용량이 지속적으로 증가하면 페이지 캐시를 위한 메모리가 지속적으로 감소한다. 그리고 페이지 캐시가 줄어들면 프로세스가 파일에 접근할 때 디스크에서 다시 읽어들이는 경우가 많아지게 되고, 어느 순간 임계점을 넘어서면 CPU 와 디스크 사용량이 폭발적으로 증가하게 된다. 이 상황에서는 모든 프로세스가 정상적으로 동작할 수 있는 상황이 아니기 때문에, 우리의 실험 환경에서 주로 나타났던 현상은 스파크 익스큐터가 드라이버에게 하트비트(Heartbeat)를 제대로 전송하지 못해서 강제로 재시작되는 경우와 노드가 일정시간(PodEvictionTimeout) 이상 동작불능(NotReady) 상태가 되어 모든 파드가 추출되는 경우이다.&lt;&#x2F;p&gt;
+&lt;p&gt;지금까지 설명한 문제들은 크게 두 가지로 나뉜다. 첫 번째는 파드(익스큐터)에 충분한 메모리를 할당하지 않아서 발생하는 문제들(JVM&#x2F;CGroup OOM)이고, 두 번째는 전체 메모리 사용량이 시스템의 물리 메모리를 초과해서 발생하는 문제들이다. 두 가지 모두 근본적인 원인은 서비스가 사용하는 메모리를 정확히 계산&#x2F;예측하는 것이 매우 어렵고, 최대 사용량 이상의 메모리를 할당해야 한다는 것이다. 그래서 문제가 발생하지 않을만큼 파드에 메모리를 할당하고 시스템에 물리 메모리를 추가하는 것이 일반적인 방법이지만, 이는 서비스가 지속적으로 재접근하는 메모리의 크기를 의미하는 워킹셋(WorkingSet)과 최대 메모리 사용량의 차이가 클수록 시스템의 활용률을 낮출 수 밖에 없다. 이를 개선하기 위해서는 꾸준히 재접근되지 않는 메모리를 반환해야 하는데, 스왑이 없으면 익명 페이지는 반환 자체를 할 수 없다.&lt;&#x2F;p&gt;
+&lt;p&gt;스왑이 없으면 익명 페이지를 반환할 수 없는데, 왜 쿠버네티스는 그 동안 스왑을 허용하지 않았을까? 여러 가지 이유가 있겠지만, 과거부터 주로 언급되던 스왑의 문제는 전반적인 성능에 대한 불확실성을 높인다는 것이다. 하지만, 최근 디스크의 입출력 속도와 스왑 관련 리눅스 커널 코드가 많이 개선되었고, 다양한 사용자들이 꾸준히 요청해왔기 때문에 쿠버네티스에서도 공식적으로 스왑을 지원하게 되었다.&lt;&#x2F;p&gt;
+&lt;p&gt;우선 스왑이 없는 환경에서 구체적으로 어떤 문제가 발생하는지 간단한 실험을 통해 살펴보자. 아래 그림은 노드의 허용량(Capacity)까지 스파크 스트리밍을 배포했을 때 반복적으로 노드가 동작불능 상태가 되면서 모든 파드가 추출된 상황을 보여주고 있다. (요청량(Requests)이 없는 파드때문에 실제 사용량은 요청량을 초과한다.)&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;k8s-spark-optimize-swap&#x2F;.&#x2F;memory.usages.without.swap.png&quot; alt=&quot;memory.usages.without.swap.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;스파크 스트리밍은 익명 페이지를 주로 사용하기 때문에 반환할 수 없는 메모리(노란색)가 지속적으로 증가하면서 페이지 캐시(하늘색)는 감소하는 모습을 볼 수 있다. 임계점(~05:00)에 가까워지면 시스템의 물리 메모리가 부족해져서 커널이 특정 프로세스를 종료(OOM)시키기도 하지만 바로 재시작하기 때문에, 결국 시스템은 과부하 상태가 된다. 그래서 임계점 직전에 CPU 와 디스크 사용량이 폭발적으로 증가하면서 노드가 동작불능(NotReady) 상태가 되었고, 잠시 후 모든 파드가 추출되면서 메모리가 반환되어 다시 동작가능(Ready) 상태가 되었다.&lt;&#x2F;p&gt;
+&lt;p&gt;이제 스왑이 있는 환경에서 동일한 실험을 해보자. 아래 그림은 위와 마찬가지로 노드의 허용량까지 스파크 스트리밍을 배포했을 때의 상황을 보여주고 있다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;k8s-spark-optimize-swap&#x2F;.&#x2F;memory.usages.with.swap.png&quot; alt=&quot;memory.usages.with.swap.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;스왑이 없는 경우와 동일하게 익명 페이지 사용량이 지속적으로 증가하면서 페이지 캐시(하늘색)가 감소하지만 동시에 스왑 사용량(붉은색)도 증가하는 것을 볼 수 있다. 스왑 사용량은 어느 정도 증가하다가 더 이상 증가하지 않는 것을 확인할 수 있는데, 이는 간단히 말하면 LRU(LeastRecentlyUsed) 정책에 의해 오래 전에 사용된 페이지들을 우선적으로 스왑 아웃(SwapOut)해서 부족한 메모리를 확보했기 때문에 시스템이 안정적으로 메모리를 할당&#x2F;해제할 수 있는 상황이 된 것이다.&lt;&#x2F;p&gt;
+&lt;p&gt;이렇게 스왑을 사용해서 시스템은 안정되었지만, 성능적인 문제는 없었을까? 결론부터 말하면 성능 저하는 거의 없다고 할 수 있다. 위의 실험에서 성능은 스파크 스트리밍의 마이크로배치 처리시간으로 검증하였는데, 실제 성능 차이는 전혀 없었다. 그렇다면 왜 성능 차이가 전혀 없을까? 여러 가지 이유가 있겠지만, 가장 중요한 이유는 아래 그래프를 보면 알 수 있다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;k8s-spark-optimize-swap&#x2F;.&#x2F;swap.inout.usages.png&quot; alt=&quot;swap.inout.usages.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;위의 그래프에서 보면, 스왑 사용량이 증가할 때(~21:30)는 스왑 아웃(SwapOut)이 꽤 많아보이지만, 이후로는 거의 없어졌다. 즉, 다시 물리 메모리가 부족해져서 스왑을 이용하여 추가 메모리를 확보할 필요가 없어졌다는 의미이다. 그리고 위의 그래프에서 더 중요한 부분은 바로 스왑 인(SwapIn)이 매우 적다는 것이다. 이는 스왑 아웃되었던 페이지를 다시 접근하여 스왑 인되는 상황이 매우 적었다는 말이다. 즉, 다시 접근할 일이 없는 페이지를 잘 골라서 추가 메모리를 확보했다는 의미이다. 이러한 이유로 성능 저하는 거의 없었다고 보면 된다. (하지만, 무리하게 스트리밍을 더 늘리면 어느 시점부터는 스왑 인&#x2F;아웃이 동시에 증가하면서 성능 저하가 나타나기 시작한다.)&lt;&#x2F;p&gt;
+&lt;p&gt;스왑이 좋은 효과를 볼 수 있는 상황은 최대 메모리 사용량이 물리 메모리보다 크지만 워킹셋은 물리 메모리보다 작은 경우이다. 이는 반복적으로 사용되는 메모리(워킹셋)는 물리 메모리를 항상 차지하고 있는 것이 유리하고, 더 이상 사용되지 않는 메모리는 스왑 아웃되어 물리 메모리를 차지하지 않는 것이 유리하기 때문이다.&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+    <entry xml:lang="en">
+        <title>[K8S&#x2F;Spark] 성능 최적화</title>
+        <published>2021-06-12T00:00:00+00:00</published>
+        <updated>2021-06-12T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              Unknown
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://haruband.github.io/k8s-spark-optimize/"/>
+        <id>https://haruband.github.io/k8s-spark-optimize/</id>
+        
+        <content type="html" xml:base="https://haruband.github.io/k8s-spark-optimize/">&lt;p&gt;우리는 다양한 클라우드 환경을 효율적으로 지원하기 위해 쿠버네티스(K8S)를 기반으로 데이터 플랫폼을 개발 중이고, 하나의 클러스터에서 카프카(Kafka), 스파크(Spark), 트리노(Trino) 등 다양한 서비스들을 동시에 운영하고 있다. 이는 각각의 서비스를 베어메탈(BareMetal) 환경에서 독립적으로 운영하는 것보다 많은 고민과 노력이 필요하고, 오늘은 이러한 환경에서 스파크를 어떻게 최적화해서 사용하고 있는지 몇 가지만 간단히 소개하고자 한다.&lt;&#x2F;p&gt;
+&lt;p&gt;우선, 어떠한 점들을 중요하게 고려하고 있는지 간단히 정리해보도록 하겠다.&lt;&#x2F;p&gt;
+&lt;ul&gt;
+&lt;li&gt;컴퓨팅 자원이 부족한 엣지 클라우드&lt;&#x2F;li&gt;
+&lt;li&gt;안정적인 실시간 데이터 수집&#x2F;보관&#x2F;처리&lt;&#x2F;li&gt;
+&lt;&#x2F;ul&gt;
+&lt;p&gt;보안이 중요한 고객들은 회사 내부에서 클라우드를 직접 운영하는 온프레미스 환경을 선호하기 때문에 컴퓨팅 자원이 부족할 수 밖에 없고, 이러한 환경에서도 안정적으로 실시간 데이터를 수집&#x2F;보관&#x2F;처리할 수 있어야 한다.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;graalvm-eul-iyonghan-mulri-memori-sayongryang-juligi&quot;&gt;GraalVM 을 이용한 물리 메모리 사용량 줄이기&lt;&#x2F;h2&gt;
+&lt;p&gt;쿠버네티스는 기본적으로 스왑(Swap)을 사용하지 않기 때문에 익명 페이지(AnonPage)를 사용하는 힙(Heap)은 반환(Reclaim)되지 않는다. 그렇기 때문에 스파크에 너무 많은 양을 할당하면 메모리 활용률이 낮아질 수 밖에 없다. 그렇다고 충분한 양을 할당하지 않으면 OOM 이 발생할 수 있기 때문에 약간의 활용률은 희생할 수 밖에 없는 상황이다. 이를 개선하기 위해, 오라클에서 개발 중인 GraalVM 을 적용해보았다. GraalVM 은 기존의 C++ 로 개발되던 자바가상머신(JVM)을 자바로 개발한 것이고, 주요 기능 중 하나가 필요없어진 힙 영역을 커널에 반환하는 기능이다. 간단히 설명하면, 기존에는 GC(GarbageCollection) 에 의해 사용되던 힙이 반환되어도 커널에 반환하지 않았지만, GraalVM 은 GC 에 의해 사용되던 힙이 반환되면 커널에 반환까지 한다. (물론, 자바가상머신에서 사용하는 힙 영역은 익명 페이지를 할당받아서 사용하기 때문에 최소한 페이지 단위로 할당&#x2F;반환이 이루어진다.)&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;k8s-spark-optimize&#x2F;.&#x2F;memory.usages.with.graalvm.png&quot; alt=&quot;memory.usages.with.graalvm.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;위의 그래프는 동일한 작업을 하는 스파크 익스큐터(Executor)를 각각 OpenJDK 와 GraalVM 으로 실행했을 때 실제 물리 메모리 사용량인 RSS(Resident Set Size) 를 측정한 결과이다. 비슷한 시점에 MajorGC 가 발생하지만 OpenJDK(노란색) 는 RSS 가 줄어들지 않고 GraalVM(연두색) 은 RSS 가 줄어드는 것을 확인할 수 있다. 하지만, 최대 힙 사용량은 GraalVM 이 더 높기 때문에 유의해서 사용하는 것이 좋을 것 같다.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;tmpfs-reul-iyonghan-diseukeu-sseugi-juligi&quot;&gt;TmpFS 를 이용한 디스크 쓰기 줄이기&lt;&#x2F;h2&gt;
+&lt;p&gt;스파크는 셔플(Shuffle)을 이용하여 데이터를 재분배할 때 로컬 디렉토리(LocalDir)에 셔플을 위해 준비한 데이터 파일을 저장한다. 해당 데이터 파일은 작업이 종료된 후 GC 에 의해 셔플 객체가 반환될 때 같이 지워지는데, 데이터 파일이 지워지기 전에 (커널의 기본 설정에 의해) 페이지 캐시가 반영(Writeback)되어 불필요한 디스크 쓰기가 주기적으로(마이크로배치 간격으로) 발생하였다. 이를 해결하기 위해 로컬 디렉토리로 메모리 기반 파일시스템인 TmpFS 를 사용하였고, 결과는 아래와 같다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;k8s-spark-optimize&#x2F;.&#x2F;storage.usages.with.tmpfs.png&quot; alt=&quot;storage.usages.with.tmpfs.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;위의 그래프에서 볼 수 있는 것처럼, 로컬 디렉토리로 Ext4FS(연두색) 를 사용한 경우에는 마이크로배치(1 분)마다 200~300 KBytes 정도의 디스크 쓰기가 발생하였고, TmpFS(노란색) 를 사용한 경우에는 동일한 상황에서 80 KBytes 미만의 디스크 쓰기가 발생하였다. 이는 입력 데이터의 크기가 커질수록 셔플에 사용되는 데이터 파일의 크기가 커지기 때문에 심각한 문제를 발생시킬 수 있다.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;seuwabeul-iyonghan-mulri-memori-hwalyongryul-nopigi&quot;&gt;스왑을 이용한 물리 메모리 활용률 높이기&lt;&#x2F;h2&gt;
+&lt;p&gt;컴퓨팅 자원을 최대한 활용하기 위해 노드의 허용량(Capacity)까지 스파크 스트리밍을 배포해보았다. 노드에 설치된 메모리가 256 GBytes 이기 때문에 하나의 드라이버(4 GBytes)와 하나의 익스큐터(7 GBytes)로 구성된 스트리밍을 총 35 개 정도 배포할 수 있었다. 스파크의 쿠버네티스 스케줄러는 익스큐터 파드에 요청량(Requests)과 제한량(Limits)을 적용하기 때문에 노드의 용량 초과로 더 이상 배포할 수는 없었다. 그러나 노드가 허용하는 범위 내에서 파드를 성공적으로 배포했지만, 노드는 아래와 같이 불안정한 모습을 보였다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;k8s-spark-optimize&#x2F;.&#x2F;memory.usages.without.swap.png&quot; alt=&quot;memory.usages.without.swap.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;해당 노드에는 요청량이 없는 여러 파드도 동작 중이기 때문에 실제 총 사용량은 총 요청량을 초과할 것이다. 그리고 쿠버네티스는 기본적으로 스왑을 사용하지 않기 때문에 대부분의 공간을 차지하는 익명 페이지는 반환이 불가능하다. 그래서 위의 그래프를 보면 페이지 캐시 사용량(하늘색)이 감소하다가 0 에 가까워지면 더 이상 추가 메모리를 확보할 수 없게 되면서 시스템이 불안정해진다. 위의 경우는 시스템이 불안정해지면서 노드가 동작불능(NotReady) 상태가 되고, 이 상태가 일정시간(PodEvictionTimeout) 이상 지속되면 해당 노드의 모든 파드가 추출되어 파드가 사용 중이던 메모리가 반환되면서 다시 노드가 동작가능(Ready) 상태가 된 것이다. 이러한 반복적인 상황을 해결하기 위해 실제 총 사용량을 어느 정도 예측하여 파드를 적절히 배포하면 좋겠지만, 다양한 워크로드가 혼재되어 있는 상황에서 총 사용량을 정확히 예측하기란 불가능에 가깝다.&lt;&#x2F;p&gt;
+&lt;p&gt;우리는 이 문제를 효율적으로 해결하기 위해 쿠버네티스 1.22 버전부터 지원하기 시작한 스왑 기능을 사용하기로 하였다. 지금까지 쿠버네티스에서 스왑을 지원하지 않았던 이유는 부족한 메모리 대신 느린 디스크를 사용하는 것이 오히려 더 많은 문제를 만든다고 보았기 때문이다. 하지만, 최근 리눅스 커널에서 스왑 관련 기능이 많이 개선되었고, 랜덤 읽기&#x2F;쓰기 속도가 매우 빠른 SSD 와 NVME 가 일반적으로 널리 쓰이면서 스왑 사용 여부를 사용자가 선택할 수 있는 기능이 추가되었다. 아래는 스왑을 사용하여 위의 실험을 다시 해본 결과이다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;k8s-spark-optimize&#x2F;.&#x2F;memory.usages.with.swap.png&quot; alt=&quot;memory.usages.with.swap.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;위의 그래프를 보면, 메모리 사용량이 증가하면서 페이지 캐시(하늘색)가 반환되지만 동시에 스왑 사용량(붉은색)도 증가하는 것을 볼 수 있다. 스왑 사용량은 어느 정도 증가하다가 더 이상 증가하지 않는 것을 확인할 수 있는데, 이는 간단히 말하면 LRU(LeastRecentlyUsed) 정책에 의해 오래 전에 사용된 페이지들을 우선적으로 스왑 아웃(SwapOut)해서 부족한 메모리를 확보했기 때문에 시스템이 안정적으로 메모리를 할당&#x2F;해제할 수 있는 상황이 된 것이다.&lt;&#x2F;p&gt;
+&lt;p&gt;이렇게 스왑을 사용해서 시스템은 안정되었지만, 성능적인 문제는 없었을까? 결론부터 말하면 성능 저하는 거의 없다고 할 수 있다. 위의 실험에서 성능은 스파크 스트리밍의 마이크로배치 처리시간으로 검증하였는데, 실제 성능 차이는 전혀 없었다. 그렇다면 왜 성능 차이가 전혀 없을까? 여러 가지 이유가 있겠지만, 가장 중요한 이유는 아래 그래프를 보면 알 수 있다.&lt;&#x2F;p&gt;
+&lt;p&gt;&lt;img src=&quot;https:&#x2F;&#x2F;haruband.github.io&#x2F;k8s-spark-optimize&#x2F;.&#x2F;swap.inout.usages.png&quot; alt=&quot;swap.inout.usages.png&quot; &#x2F;&gt;&lt;&#x2F;p&gt;
+&lt;p&gt;위의 그래프에서 보면, 스왑 사용량이 증가할 때(~21:30)는 스왑 아웃(SwapOut)이 꽤 많아보이지만, 이후로는 거의 없어졌다. 즉, 다시 물리 메모리가 부족해져서 스왑을 이용하여 추가 메모리를 확보할 필요가 없어졌다는 의미이다. 그리고 위의 그래프에서 더 중요한 부분은 바로 스왑 인(SwapIn)이 매우 적다는 것이다. 이는 스왑 아웃되었던 페이지를 다시 접근하여 스왑 인되는 상황이 매우 적었다는 말이다. 즉, 다시 접근할 일이 없는 페이지를 잘 골라서 추가 메모리를 확보했다는 의미이다. 이러한 이유로 성능 저하는 거의 없었다고 보면 된다. (하지만, 무리하게 스트리밍을 더 늘리면 어느 시점부터는 스왑 인&#x2F;아웃이 동시에 증가하면서 성능 저하가 나타나기 시작한다.)&lt;&#x2F;p&gt;
+&lt;p&gt;스왑이 긍정적인 효과를 내기 위해서는 지속적으로 재접근되는 메모리의 크기를 의미하는 워킹셋(WorkingSet)이 중요한데, 전체 메모리 사용량은 물리 메모리보다 크지만 워킹셋이 물리 메모리보다 작다면 스왑이 좋은 효과를 볼 수 있다. 이는 반복적으로 사용되는 메모리(워킹셋)는 물리 메모리를 항상 차지하고 있는 것이 유리하고, 더 이상 사용되지 않는 메모리는 스왑 아웃되어 물리 메모리를 차지하지 않는 것이 유리하기 때문이다.&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+</feed>

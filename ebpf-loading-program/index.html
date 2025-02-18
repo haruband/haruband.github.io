@@ -1,0 +1,304 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://haruband.github.io/js/theme.min.js" integrity="sha384-pb++s6uBRKaQv+iAXpgA/H3IlpLZdO14tTwuCI7uXmz4aaZdByoCcM+6BhynMq/1"></script>
+  <link rel="stylesheet" href="https://haruband.github.io/abridge.css?h=98ebdf6fd3d59dfb2edf" />
+  <meta charset="utf-8" />
+  <meta http-equiv="x-ua-compatible" content="ie=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="base" content="https://haruband.github.io" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#333333" />
+  <meta name="msapplication-TileColor" content="#333333" />
+  <link rel="manifest" href="https://haruband.github.io/manifest.min.json" />
+  <link rel="mask-icon" href="https://haruband.github.io/safari-pinned-tab.svg" color="#ff9900" />
+  <link rel="icon" type="image/svg+xml" href="https://haruband.github.io/favicon.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="https://haruband.github.io/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="https://haruband.github.io/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="https://haruband.github.io/favicon-16x16.png" />
+  <link rel="alternate" type="application/atom+xml" title="CodeBook Atom Feed" href="https://haruband.github.io/atom.xml" />
+  <meta name="robots" content="index, follow" />
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <title>[eBPF] BPF 실행파일 로딩 과정 분석 (서브프로그램) | CodeBook</title>
+  <meta name="author" content="Inhyeok Kim" />
+  <meta name="copyright" content="CodeBook" />
+  <meta name="description" content="Haruband&#x27;s TechBlog" />
+  <link rel="canonical" href="https://haruband.github.io/ebpf-loading-program/" />
+  <meta name="keywords" content="Arrow, Datafusion, Kubernetes" />
+  <meta name="google-site-verification" content="Your Google Site verification code." />
+  <meta name="msvalidate.01" content="Your Bing Site verification code." />
+  <meta property="og:url" content="https://haruband.github.io/ebpf-loading-program/" />
+  <meta name="twitter:url" content="https://haruband.github.io/ebpf-loading-program/" />
+  <meta property="og:description" content="Haruband&#x27;s TechBlog" />
+  <meta name="twitter:description" content="Haruband&#x27;s TechBlog" />
+  <meta property="og:title" content="[eBPF] BPF 실행파일 로딩 과정 분석 (서브프로그램) | CodeBook" />
+  <meta name="twitter:title" content="[eBPF] BPF 실행파일 로딩 과정 분석 (서브프로그램) | CodeBook" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:site_name" content="CodeBook" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:type" content="website" />
+  <meta property="og:updated_time" content="2021-08-19" />
+  <meta name="twitter:site" content="@your-user-name" />
+  <meta name="twitter:creator" content="@your-user-name" />
+  <script defer src="https://haruband.github.io/js/abridge.min.js?h=e0f9a881a665c86cce9c" integrity="sha384-QF67y7RnPkuDrJNQqn3/7nYxqxWkW/qHI7zN0WTES1aXbf+TotoByRBb835fUE6U"></script>
+  <noscript><link rel="stylesheet" href="https://haruband.github.io/nojs.css" /></noscript>
+</head>
+<body>
+  <header>
+    <nav>
+      <div><big><a href="https://haruband.github.io" title="CodeBook">CodeBook</a></big></div>
+      <div>
+
+        <div>
+          <ul><li><a class="s110" href="https://haruband.github.io/archive/"> Posts </a></li><li><a class="s110" href="https://haruband.github.io/tags/"> Tags </a></li><li><i type="reset" id="mode" class="js svgs adjust"></i></ul>
+        </div>
+
+        <div>
+          <div>
+            <form autocomplete=off class="js" name="goSearch" id="searchbox">
+              <div class="searchd">
+                <input id="searchinput" type="text" placeholder="Search" title="Search" />
+                <button type="submit" title="Search" class="svgs svgm search"></button>
+              </div>
+              <div class="results"><div id="suggestions"></div></div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </nav>
+  </header>
+  <main>
+    <article>
+      <h1><a href="https://haruband.github.io/ebpf-loading-program/">[eBPF] BPF 실행파일 로딩 과정 분석 (서브프로그램)</a></h1>
+
+      <span class="s95"> Inhyeok Kim <span class="rpad"></span> August 19, 2021 <span class="rpad"></span>Updated: August 19, 2021 <span class="rpad"></span> #<a href="https://haruband.github.io/tags/ebpf/">eBPF</a> </span>
+
+    
+        <div class="block">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/ebpf/">eBPF (Series)</a><br>
+            <a href="https://haruband.github.io/ebpf-core/">[eBPF] CO-RE (Compile Once - Run Everywhere) 기능 분석</a><br>
+            <a href="https://haruband.github.io/ebpf-loading-memory/">[eBPF] BPF 실행파일 로딩 과정 분석 (메모리 재배치)</a><br>
+            <a class="scur" href="https://haruband.github.io/ebpf-loading-program/">[eBPF] BPF 실행파일 로딩 과정 분석 (서브프로그램)</a><br> 
+          
+            <a href="https://haruband.github.io/ebpf-loading-jit/">[eBPF] BPF 실행파일 로딩 과정 분석 (JIT)</a><br>
+      </div>
+    </div>
+
+
+<p>BPF 는 일반적으로 하나의 함수(메인함수)가 하나의 섹션이 되고, 하나의 섹션이 하나의 프로그램이 된다. 그래서 커널에서 해당 프로그램을 실행할 때는 프로그램의 시작 위치가 메인함수의 시작 위치이기 때문에 간단히 처음부터 실행하면 된다. 하지만 아래와 같이 메인함수에서 공통함수를 호출하는 경우처럼 두 개 이상의 함수가 필요한 경우에는 프로그램의 시작 위치를 어떻게 보장할까? 메인함수를 무조건 프로그램의 시작 위치에 배치할까? 아니면 메인함수가 어디에 위치하든 프로그램의 시작 위치를 메인함수의 시작 위치로 지정할까? BPF 는 이를 해결하기 위해 서브프로그램이라는 기능을 제공하고 있고, 오늘은 이에 대해 살펴보도록 하자.</p>
+<pre data-lang="c" class="language-c z-code"><code class="language-c" data-lang="c"><span class="z-source z-c"><span class="z-storage z-modifier z-c">static</span> <span class="z-storage z-type z-c">int</span> <span class="z-meta z-function z-c"><span class="z-entity z-name z-function z-c">probe_entry</span></span><span class="z-meta z-function z-parameters z-c"><span class="z-meta z-group z-c"><span class="z-punctuation z-section z-group z-begin z-c">(</span></span></span><span class="z-meta z-function z-parameters z-c"><span class="z-meta z-group z-c"><span class="z-storage z-type z-c">struct</span> pt_regs <span class="z-keyword z-operator z-c">*</span><span class="z-variable z-parameter z-c">ctx</span><span class="z-punctuation z-separator z-c">,</span> <span class="z-storage z-type z-c">struct</span> file <span class="z-keyword z-operator z-c">*</span><span class="z-variable z-parameter z-c">file</span><span class="z-punctuation z-separator z-c">,</span> <span class="z-support z-type z-sys-types z-c">size_t</span> <span class="z-variable z-parameter z-c">count</span><span class="z-punctuation z-separator z-c">,</span> <span class="z-storage z-type z-c">enum</span> op <span class="z-variable z-parameter z-c">op</span><span class="z-punctuation z-section z-group z-end z-c">)</span></span></span><span class="z-meta z-function z-c">
+</span></span><span class="z-source z-c"><span class="z-meta z-function z-c"></span><span class="z-meta z-function z-c"><span class="z-meta z-block z-c"><span class="z-punctuation z-section z-block z-begin z-c">{</span></span></span><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">  __u64 pid_tgid <span class="z-keyword z-operator z-assignment z-c">=</span> <span class="z-meta z-function-call z-c"><span class="z-variable z-function z-c">bpf_get_current_pid_tgid</span><span class="z-meta z-group z-c"><span class="z-punctuation z-section z-group z-begin z-c">(</span></span></span><span class="z-meta z-function-call z-c"></span><span class="z-meta z-function-call z-c"><span class="z-meta z-group z-c"><span class="z-punctuation z-section z-group z-end z-c">)</span></span></span><span class="z-punctuation z-terminator z-c">;</span>
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">  __u32 pid <span class="z-keyword z-operator z-assignment z-c">=</span> pid_tgid <span class="z-keyword z-operator z-arithmetic z-c">&gt;&gt;</span> <span class="z-constant z-numeric z-integer z-decimal z-c">32</span><span class="z-punctuation z-terminator z-c">;</span>
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">  __u32 tid <span class="z-keyword z-operator z-assignment z-c">=</span> <span class="z-meta z-group z-c"><span class="z-punctuation z-section z-group z-begin z-c">(</span>__u32<span class="z-punctuation z-section z-group z-end z-c">)</span></span>pid_tgid<span class="z-punctuation z-terminator z-c">;</span>
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">  <span class="z-keyword z-operator z-variadic z-c">...</span>
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">  <span class="z-keyword z-control z-flow z-return z-c">return</span> <span class="z-constant z-numeric z-integer z-decimal z-c">0</span><span class="z-punctuation z-terminator z-c">;</span>
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c"></span></span><span class="z-meta z-function z-c"><span class="z-meta z-block z-c"><span class="z-punctuation z-section z-block z-end z-c">}</span></span></span>
+</span><span class="z-source z-c">
+</span><span class="z-source z-c"><span class="z-meta z-assumed-macro z-c"><span class="z-variable z-function z-assumed-macro z-c">SEC</span><span class="z-punctuation z-section z-group z-begin z-c">(</span><span class="z-string z-quoted z-double z-c"><span class="z-punctuation z-definition z-string z-begin z-c">&quot;</span>kprobe/vfs_read<span class="z-punctuation z-definition z-string z-end z-c">&quot;</span></span><span class="z-punctuation z-section z-group z-end z-c">)</span></span>
+</span><span class="z-source z-c"><span class="z-storage z-type z-c">int</span> <span class="z-meta z-function z-c"><span class="z-entity z-name z-function z-c">BPF_KPROBE</span></span><span class="z-meta z-function z-parameters z-c"><span class="z-meta z-group z-c"><span class="z-punctuation z-section z-group z-begin z-c">(</span></span></span><span class="z-meta z-function z-parameters z-c"><span class="z-meta z-group z-c"><span class="z-variable z-parameter z-c">vfs_read_entry</span><span class="z-punctuation z-separator z-c">,</span> <span class="z-storage z-type z-c">struct</span> file <span class="z-keyword z-operator z-c">*</span><span class="z-variable z-parameter z-c">file</span><span class="z-punctuation z-separator z-c">,</span> <span class="z-storage z-type z-c">char</span> <span class="z-keyword z-operator z-c">*</span><span class="z-variable z-parameter z-c">buf</span><span class="z-punctuation z-separator z-c">,</span> <span class="z-support z-type z-sys-types z-c">size_t</span> <span class="z-variable z-parameter z-c">count</span><span class="z-punctuation z-separator z-c">,</span> loff_t <span class="z-keyword z-operator z-c">*</span><span class="z-variable z-parameter z-c">pos</span><span class="z-punctuation z-section z-group z-end z-c">)</span></span></span><span class="z-meta z-function z-c">
+</span></span><span class="z-source z-c"><span class="z-meta z-function z-c"></span><span class="z-meta z-function z-c"><span class="z-meta z-block z-c"><span class="z-punctuation z-section z-block z-begin z-c">{</span></span></span><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">  <span class="z-keyword z-control z-flow z-return z-c">return</span> <span class="z-meta z-function-call z-c"><span class="z-variable z-function z-c">probe_entry</span><span class="z-meta z-group z-c"><span class="z-punctuation z-section z-group z-begin z-c">(</span></span></span><span class="z-meta z-function-call z-c"><span class="z-meta z-group z-c">ctx<span class="z-punctuation z-separator z-c">,</span> file<span class="z-punctuation z-separator z-c">,</span> count<span class="z-punctuation z-separator z-c">,</span> READ</span></span><span class="z-meta z-function-call z-c"><span class="z-meta z-group z-c"><span class="z-punctuation z-section z-group z-end z-c">)</span></span></span><span class="z-punctuation z-terminator z-c">;</span>
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c"></span></span><span class="z-meta z-function z-c"><span class="z-meta z-block z-c"><span class="z-punctuation z-section z-block z-end z-c">}</span></span></span>
+</span><span class="z-source z-c">
+</span><span class="z-source z-c"><span class="z-meta z-assumed-macro z-c"><span class="z-variable z-function z-assumed-macro z-c">SEC</span><span class="z-punctuation z-section z-group z-begin z-c">(</span><span class="z-string z-quoted z-double z-c"><span class="z-punctuation z-definition z-string z-begin z-c">&quot;</span>kprobe/vfs_write<span class="z-punctuation z-definition z-string z-end z-c">&quot;</span></span><span class="z-punctuation z-section z-group z-end z-c">)</span></span>
+</span><span class="z-source z-c"><span class="z-storage z-type z-c">int</span> <span class="z-meta z-function z-c"><span class="z-entity z-name z-function z-c">BPF_KPROBE</span></span><span class="z-meta z-function z-parameters z-c"><span class="z-meta z-group z-c"><span class="z-punctuation z-section z-group z-begin z-c">(</span></span></span><span class="z-meta z-function z-parameters z-c"><span class="z-meta z-group z-c"><span class="z-variable z-parameter z-c">vfs_write_entry</span><span class="z-punctuation z-separator z-c">,</span> <span class="z-storage z-type z-c">struct</span> file <span class="z-keyword z-operator z-c">*</span><span class="z-variable z-parameter z-c">file</span><span class="z-punctuation z-separator z-c">,</span> <span class="z-storage z-modifier z-c">const</span> <span class="z-storage z-type z-c">char</span> <span class="z-keyword z-operator z-c">*</span><span class="z-variable z-parameter z-c">buf</span><span class="z-punctuation z-separator z-c">,</span> <span class="z-support z-type z-sys-types z-c">size_t</span> <span class="z-variable z-parameter z-c">count</span><span class="z-punctuation z-separator z-c">,</span> loff_t <span class="z-keyword z-operator z-c">*</span><span class="z-variable z-parameter z-c">pos</span><span class="z-punctuation z-section z-group z-end z-c">)</span></span></span><span class="z-meta z-function z-c">
+</span></span><span class="z-source z-c"><span class="z-meta z-function z-c"></span><span class="z-meta z-function z-c"><span class="z-meta z-block z-c"><span class="z-punctuation z-section z-block z-begin z-c">{</span></span></span><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">  <span class="z-keyword z-control z-flow z-return z-c">return</span> <span class="z-meta z-function-call z-c"><span class="z-variable z-function z-c">probe_entry</span><span class="z-meta z-group z-c"><span class="z-punctuation z-section z-group z-begin z-c">(</span></span></span><span class="z-meta z-function-call z-c"><span class="z-meta z-group z-c">ctx<span class="z-punctuation z-separator z-c">,</span> file<span class="z-punctuation z-separator z-c">,</span> count<span class="z-punctuation z-separator z-c">,</span> WRITE</span></span><span class="z-meta z-function-call z-c"><span class="z-meta z-group z-c"><span class="z-punctuation z-section z-group z-end z-c">)</span></span></span><span class="z-punctuation z-terminator z-c">;</span>
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c"></span></span><span class="z-meta z-function z-c"><span class="z-meta z-block z-c"><span class="z-punctuation z-section z-block z-end z-c">}</span></span></span>
+</span></code></pre>
+<p>위의 코드는 <a rel="noopener" target="_blank" href="https://github.com/iovisor/bcc">bcc</a> 의 <a rel="noopener" target="_blank" href="https://github.com/iovisor/bcc/blob/master/libbpf-tools/filetop.bpf.c">filetop</a> 예제코드이다. 해당 예제는 vfs_read 와 vfs_write 커널함수에서 각각 사용할 두 개의 BPF 메인함수와 두 개의 함수에서 사용하는 공통함수(probe_entry)로 구성되어 있다. 이를 컴파일한 결과는 아래와 같다.</p>
+<pre class="z-code"><code><span class="z-text z-plain">Disassembly of section .text:
+</span><span class="z-text z-plain">
+</span><span class="z-text z-plain">0000000000000000 &lt;probe_entry&gt;:
+</span><span class="z-text z-plain">       0:       7b 3a b8 ff 00 00 00 00 *(u64 *)(r10 - 72) = r3
+</span><span class="z-text z-plain">       1:       7b 2a c0 ff 00 00 00 00 *(u64 *)(r10 - 64) = r2
+</span><span class="z-text z-plain">       2:       7b 1a c8 ff 00 00 00 00 *(u64 *)(r10 - 56) = r1
+</span><span class="z-text z-plain">       3:       85 00 00 00 0e 00 00 00 call 14
+</span><span class="z-text z-plain">       4:       bf 08 00 00 00 00 00 00 r8 = r0
+</span><span class="z-text z-plain">       5:       b7 01 00 00 00 00 00 00 r1 = 0
+</span><span class="z-text z-plain">       6:       7b 1a e0 ff 00 00 00 00 *(u64 *)(r10 - 32) = r1
+</span><span class="z-text z-plain">       7:       7b 1a d8 ff 00 00 00 00 *(u64 *)(r10 - 40) = r1
+</span><span class="z-text z-plain">       8:       7b 1a d0 ff 00 00 00 00 *(u64 *)(r10 - 48) = r1
+</span><span class="z-text z-plain">       9:       bf 89 00 00 00 00 00 00 r9 = r8
+</span><span class="z-text z-plain">      10:       77 09 00 00 20 00 00 00 r9 &gt;&gt;= 32
+</span><span class="z-text z-plain">      11:       18 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 r1 = 0 ll
+</span><span class="z-text z-plain">      13:       61 12 00 00 00 00 00 00 r2 = *(u32 *)(r1 + 0)
+</span><span class="z-text z-plain">      14:       15 02 02 00 00 00 00 00 if r2 == 0 goto +2 &lt;LBB2_2&gt;
+</span><span class="z-text z-plain">      15:       61 11 00 00 00 00 00 00 r1 = *(u32 *)(r1 + 0)
+</span><span class="z-text z-plain">      16:       5d 91 7c 00 00 00 00 00 if r1 != r9 goto +124 &lt;LBB2_14&gt;
+</span><span class="z-text z-plain">      ...
+</span><span class="z-text z-plain">
+</span><span class="z-text z-plain">Disassembly of section kprobe/vfs_read:
+</span><span class="z-text z-plain">
+</span><span class="z-text z-plain">0000000000000000 &lt;vfs_read_entry&gt;:
+</span><span class="z-text z-plain">       0:       79 12 60 00 00 00 00 00 r2 = *(u64 *)(r1 + 96)
+</span><span class="z-text z-plain">       1:       79 11 70 00 00 00 00 00 r1 = *(u64 *)(r1 + 112)
+</span><span class="z-text z-plain">       2:       b7 03 00 00 00 00 00 00 r3 = 0
+</span><span class="z-text z-plain">       3:       85 10 00 00 ff ff ff ff call -1
+</span><span class="z-text z-plain">       4:       b7 00 00 00 00 00 00 00 r0 = 0
+</span><span class="z-text z-plain">       5:       95 00 00 00 00 00 00 00 exit
+</span><span class="z-text z-plain">
+</span><span class="z-text z-plain">Disassembly of section kprobe/vfs_write:
+</span><span class="z-text z-plain">
+</span><span class="z-text z-plain">0000000000000000 &lt;vfs_write_entry&gt;:
+</span><span class="z-text z-plain">       0:       79 12 60 00 00 00 00 00 r2 = *(u64 *)(r1 + 96)
+</span><span class="z-text z-plain">       1:       79 11 70 00 00 00 00 00 r1 = *(u64 *)(r1 + 112)
+</span><span class="z-text z-plain">       2:       b7 03 00 00 01 00 00 00 r3 = 1
+</span><span class="z-text z-plain">       3:       85 10 00 00 ff ff ff ff call -1
+</span><span class="z-text z-plain">       4:       b7 00 00 00 00 00 00 00 r0 = 0
+</span><span class="z-text z-plain">       5:       95 00 00 00 00 00 00 00 exit
+</span></code></pre>
+<p>위의 오브젝트를 보면 메인함수는 각각의 섹션에 위치해있지만 공통함수는 .text 섹션에 위치해있는 것을 볼 수 있다. (함수 선언 앞에 섹션을 지정하지 않으면 해당 함수는 기본적으로 .text 섹션에 위치하게 된다.) 일반적으로 BPF 프로그램을 로딩할 때는 하나의 특정 섹션을 지정해서 사용하는데, 위와 같이 메인함수에서 호출하는 함수가 다른 섹션에 존재할 때는 어떻게 동작하는 것일까? 이 질문에 대한 해답은 <a rel="noopener" target="_blank" href="https://github.com/torvalds/linux/blob/master/tools/lib/bpf/libbpf.c">libbpf</a>를 기준으로 설명하도록 하겠다. 우선 아래 재배치 목록을 살펴보자.</p>
+<pre class="z-code"><code><span class="z-text z-plain">RELOCATION RECORDS FOR [kprobe/vfs_read]:
+</span><span class="z-text z-plain">OFFSET           TYPE                     VALUE
+</span><span class="z-text z-plain">0000000000000018 R_BPF_64_32              .text
+</span><span class="z-text z-plain">
+</span><span class="z-text z-plain">RELOCATION RECORDS FOR [kprobe/vfs_write]:
+</span><span class="z-text z-plain">OFFSET           TYPE                     VALUE
+</span><span class="z-text z-plain">0000000000000018 R_BPF_64_32              .text
+</span></code></pre>
+<p>위의 재배치 목록 중 두 번째 항목은 kprobe/vfs_write 섹션의 0x18 오프셋에 해당하는 (3:) 명령어에서 .text 섹션을 참조한다는 의미이다. 그리고 kprobe/vfs_write 섹션의 (3:) 명령어의 인자를 보면 -1 (0xffffffff) 인 값인데, 이는 해당 섹션(.text)에서 -1 에 1 을 더한 위치를 의미한다. 즉, (3:) 명령어는 .text 섹션의 0x0 오프셋을 호출(call)하라는 뜻이다. 이러한 재배치 정보를 이용하여 실제 커널에 전달할 BPF 코드를 작성하는 과정은 다음과 같다.</p>
+<pre class="z-code"><code><span class="z-text z-plain">Symbol table &#39;.symtab&#39; contains 20 entries:
+</span><span class="z-text z-plain">   Num:    Value          Size Type    Bind   Vis       Ndx Name
+</span><span class="z-text z-plain">     0: 0000000000000000     0 NOTYPE  LOCAL  DEFAULT   UND
+</span><span class="z-text z-plain">     1: 00000000000003c8     0 NOTYPE  LOCAL  DEFAULT     1 LBB2_10
+</span><span class="z-text z-plain">     2: 00000000000003d0     0 NOTYPE  LOCAL  DEFAULT     1 LBB2_11
+</span><span class="z-text z-plain">     3: 0000000000000430     0 NOTYPE  LOCAL  DEFAULT     1 LBB2_13
+</span><span class="z-text z-plain">     4: 0000000000000468     0 NOTYPE  LOCAL  DEFAULT     1 LBB2_14
+</span><span class="z-text z-plain">     5: 0000000000000088     0 NOTYPE  LOCAL  DEFAULT     1 LBB2_2
+</span><span class="z-text z-plain">     6: 0000000000000138     0 NOTYPE  LOCAL  DEFAULT     1 LBB2_4
+</span><span class="z-text z-plain">     7: 00000000000003b0     0 NOTYPE  LOCAL  DEFAULT     1 LBB2_8
+</span><span class="z-text z-plain">     8: 0000000000000000  1136 FUNC    LOCAL  DEFAULT     1 probe_entry
+</span><span class="z-text z-plain">     9: 0000000000000000  4160 OBJECT  LOCAL  DEFAULT     7 zero_value
+</span><span class="z-text z-plain">    10: 0000000000000000     0 SECTION LOCAL  DEFAULT     1 .text
+</span><span class="z-text z-plain">    11: 0000000000000000     0 SECTION LOCAL  DEFAULT     2 kprobe/vfs_read
+</span><span class="z-text z-plain">    12: 0000000000000000     0 SECTION LOCAL  DEFAULT     3 kprobe/vfs_write
+</span><span class="z-text z-plain">    13: 0000000000000000     0 SECTION LOCAL  DEFAULT     7 .bss
+</span><span class="z-text z-plain">    14: 0000000000000000    13 OBJECT  GLOBAL DEFAULT     5 LICENSE
+</span><span class="z-text z-plain">    15: 0000000000000000    32 OBJECT  GLOBAL DEFAULT     6 entries
+</span><span class="z-text z-plain">    16: 0000000000000004     1 OBJECT  GLOBAL DEFAULT     4 regular_file_only
+</span><span class="z-text z-plain">    17: 0000000000000000     4 OBJECT  GLOBAL DEFAULT     4 target_pid
+</span><span class="z-text z-plain">    18: 0000000000000000    48 FUNC    GLOBAL DEFAULT     2 vfs_read_entry
+</span><span class="z-text z-plain">    19: 0000000000000000    48 FUNC    GLOBAL DEFAULT     3 vfs_write_entry
+</span></code></pre>
+<p>일단 심볼 테이블을 이용하여 코드를 포함하고 있는 섹션에 있는 함수들을 모두 프로그램으로 등록한다. 위의 심볼 테이블을 보면, kprobe/vfs_read 섹션에 있는 vfs_read_entry 함수를, kprobe/vfs_write 섹션에 있는 vfs_write_entry 함수를, 그리고 .text 섹션에 있는 probe_entry 함수를 각각 프로그램으로 등록한다. 이때 .text 섹션에 있는 함수들은 모두 서브프로그램으로 등록이 되는데, 이는 커널에 직접 로딩되는 프로그램이 아니고, 다른 프로그램에서 호출해서 사용하는 프로그램이라는 의미이다. 그리고 나머지 커널에 직접 로딩되는 프로그램들은 앞의 재배치 정보(.text 섹션의 0x0 오프셋)와 프로그램 목록(.text 섹션의 0x0 오프셋에 해당하는 probe_entry 프로그램)을 이용하여 메인함수에서 호출하는 함수를 해당 프로그램의 뒤쪽에 추가하고, 해당 함수를 호출하는 명령어의 인자를 적절한 값으로 수정한다. 이 과정은 메인함수에서 호출한 함수에서도 다른 함수를 호출할 수 있기 때문에 재귀적으로 일어난다. 아래는 커널에 로딩된 프로그램(BPF 코드)을 덤프한 것이다.</p>
+<pre class="z-code"><code><span class="z-text z-plain">$ bpftool prog dump xlated id 17
+</span><span class="z-text z-plain">int vfs_write_entry(struct pt_regs * ctx):
+</span><span class="z-text z-plain">; int BPF_KPROBE(vfs_write_entry, struct file *file, const char *buf, size_t count, loff_t *pos)
+</span><span class="z-text z-plain">   0: (79) r2 = *(u64 *)(r1 +96)
+</span><span class="z-text z-plain">   1: (79) r1 = *(u64 *)(r1 +112)
+</span><span class="z-text z-plain">; return probe_entry(ctx, file, count, WRITE);
+</span><span class="z-text z-plain">   2: (b7) r3 = 1
+</span><span class="z-text z-plain">   3: (85) call pc+2#bpf_prog_14ee69a88d05505b_F
+</span><span class="z-text z-plain">; int BPF_KPROBE(vfs_write_entry, struct file *file, const char *buf, size_t count, loff_t *pos)
+</span><span class="z-text z-plain">   4: (b7) r0 = 0
+</span><span class="z-text z-plain">   5: (95) exit
+</span><span class="z-text z-plain">int probe_entry(struct pt_regs * ctx, struct file * file, size_t count, enum op op):
+</span><span class="z-text z-plain">; static int probe_entry(struct pt_regs *ctx, struct file *file, size_t count, enum op op)
+</span><span class="z-text z-plain">   6: (7b) *(u64 *)(r10 -72) = r3
+</span><span class="z-text z-plain">   7: (7b) *(u64 *)(r10 -64) = r2
+</span><span class="z-text z-plain">   8: (7b) *(u64 *)(r10 -56) = r1
+</span><span class="z-text z-plain">; __u64 pid_tgid = bpf_get_current_pid_tgid();
+</span><span class="z-text z-plain">   9: (85) call bpf_get_current_pid_tgid#133744
+</span><span class="z-text z-plain">  10: (bf) r8 = r0
+</span><span class="z-text z-plain">  11: (b7) r1 = 0
+</span><span class="z-text z-plain">; struct file_id key = {};
+</span><span class="z-text z-plain">  12: (7b) *(u64 *)(r10 -32) = r1
+</span><span class="z-text z-plain">  13: (7b) *(u64 *)(r10 -40) = r1
+</span><span class="z-text z-plain">  14: (7b) *(u64 *)(r10 -48) = r1
+</span><span class="z-text z-plain">; __u32 pid = pid_tgid &gt;&gt; 32;
+</span><span class="z-text z-plain">  15: (bf) r9 = r8
+</span><span class="z-text z-plain">  16: (77) r9 &gt;&gt;= 32
+</span></code></pre>
+<p>위의 코드를 보면, 맨 앞 부분에 메인함수가 위치해있고, 바로 이어서 공통함수(probe_entry)가 위치해있는 것을 볼 수 있다. 그리고 공통함수를 호출하는 (3:) 명령어를 보면, 공통함수의 시작 위치가 (6:) 명령어이기 때문에 다음 명령어(4:)의 주소값(Program Counter)을 기준으로 2 를 더한 위치를 호출하는 것을 볼 수 있다. 마지막으로 BPF 코드를 실제 동작 가능한 머신코드(x86)로 JIT(Just-In-Time) 컴파일한 결과물은 아래와 같다.</p>
+<pre class="z-code"><code><span class="z-text z-plain">$ bpftool prog dump jited id 17
+</span><span class="z-text z-plain">int vfs_write_entry(struct pt_regs * ctx):
+</span><span class="z-text z-plain">bpf_prog_f3dfb13428230191_F:
+</span><span class="z-text z-plain">; int BPF_KPROBE(vfs_write_entry, struct file *file, const char *buf, size_t count, loff_t *pos)
+</span><span class="z-text z-plain">   0:	nopl   0x0(%rax,%rax,1)
+</span><span class="z-text z-plain">   5:	xchg   %ax,%ax
+</span><span class="z-text z-plain">   7:	push   %rbp
+</span><span class="z-text z-plain">   8:	mov    %rsp,%rbp
+</span><span class="z-text z-plain">   b:	mov    0x60(%rdi),%rsi
+</span><span class="z-text z-plain">   f:	mov    0x70(%rdi),%rdi
+</span><span class="z-text z-plain">; return probe_entry(ctx, file, count, WRITE);
+</span><span class="z-text z-plain">  13:	mov    $0x1,%edx
+</span><span class="z-text z-plain">  18:	callq  0x00000000000020c8
+</span><span class="z-text z-plain">; int BPF_KPROBE(vfs_write_entry, struct file *file, const char *buf, size_t count, loff_t *pos)
+</span><span class="z-text z-plain">  1d:	xor    %eax,%eax
+</span><span class="z-text z-plain">  1f:	leaveq
+</span><span class="z-text z-plain">  20:	retq
+</span><span class="z-text z-plain">
+</span><span class="z-text z-plain">int probe_entry(struct pt_regs * ctx, struct file * file, size_t count, enum op op):
+</span><span class="z-text z-plain">bpf_prog_41cced38f6644d9a_F:
+</span><span class="z-text z-plain">; static int probe_entry(struct pt_regs *ctx, struct file *file, size_t count, enum op op)
+</span><span class="z-text z-plain">   0:	nopl   0x0(%rax,%rax,1)
+</span><span class="z-text z-plain">   5:	xchg   %ax,%ax
+</span><span class="z-text z-plain">   7:	push   %rbp
+</span><span class="z-text z-plain">   8:	mov    %rsp,%rbp
+</span><span class="z-text z-plain">   b:	sub    $0x48,%rsp
+</span><span class="z-text z-plain">  12:	push   %rbx
+</span><span class="z-text z-plain">  13:	push   %r13
+</span><span class="z-text z-plain">  15:	push   %r14
+</span><span class="z-text z-plain">  17:	push   %r15
+</span><span class="z-text z-plain">  19:	mov    %rdx,-0x48(%rbp)
+</span><span class="z-text z-plain">  1d:	mov    %rsi,-0x40(%rbp)
+</span><span class="z-text z-plain">  21:	mov    %rdi,-0x38(%rbp)
+</span><span class="z-text z-plain">; __u64 pid_tgid = bpf_get_current_pid_tgid();
+</span><span class="z-text z-plain">  25:	callq  0xffffffffd3e3693c
+</span><span class="z-text z-plain">  2a:	mov    %rax,%r14
+</span><span class="z-text z-plain">  2d:	xor    %edi,%edi
+</span></code></pre>
+<p>리눅스 커널에서는 앞의 BPF 코드를 한번에 컴파일하지 않고, 메인함수와 공통함수를 서브프로그램으로 나눈 다음 각각 컴파일한다. 그리고 메인함수(vfs_write_entry)에서 공통함수(probe_entry)를 호출하는 명령어(18:)를 보면, 다음 명령어(0x1d:)의 위치에서 공통함수를 JIT 컴파일한 결과물이 저장된 메모리 위치까지의 거리(오프셋)를 이용하여 호출하는 것을 볼 수 있다. 여기까지 BPF 코드에서 다른 함수를 호출하는 과정을 살펴보았다.</p>
+
+      <nav>
+        <div>
+          <a href="https://haruband.github.io/ebpf-loading-jit/">&#8249; [eBPF] BPF 실행파일 로딩 과정 분석 (JIT)</a>
+        </div>
+        <div>
+          <a href="https://haruband.github.io/ebpf-loading-memory/"> [eBPF] BPF 실행파일 로딩 과정 분석 (메모리 재배치) &#8250;</a>
+        </div>
+      </nav>
+    </article>
+
+    <div class="sblock">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/ebpf/">Series</a><br>
+            
+      <a href="https://haruband.github.io/ebpf-core/">[eBPF] CO-RE (Compile Once - Run Everywhere) 기능 분석</a><br>
+            
+      <a href="https://haruband.github.io/ebpf-loading-memory/">[eBPF] BPF 실행파일 로딩 과정 분석 (메모리 재배치)</a><br>
+            
+      <a class="scur" href="https://haruband.github.io/ebpf-loading-program/">[eBPF] BPF 실행파일 로딩 과정 분석 (서브프로그램)</a><br>
+    
+            
+      <a href="https://haruband.github.io/ebpf-loading-jit/">[eBPF] BPF 실행파일 로딩 과정 분석 (JIT)</a><br>
+      </div>
+  </main>
+  <footer>
+    <div class="c">
+      <nav class="tpad"><div><a href="https://www.linkedin.com/in/inhyeok-kim-7620a0b0/" target="_blank" title="LinkedIn"><i type="Button" class="svg linkedin" title="LinkedIn"></i></a><a href="https://github.com/haruband/" target="_blank" title="Github"><i type="Button" class="svg github" title="Github"></i></a></div></nav>
+      <nav class="vpad">
+        <a class="rpad s90" href="https://haruband.github.io/about/"> About </a>
+        <a class="rpad s90" href="https://haruband.github.io/contact/"> Contact </a>
+      </nav>
+      <p class="s80"> &copy; <span id="year">2025</span> CodeBook</p>
+      <p class="s80">Powered by <a href="https://www.getzola.org/" target="_blank">Zola</a> & <a href="https://github.com/jieiku/abridge/" target="_blank">Abridge</a></p>
+    </div>
+  </footer><span class="topout">
+<span class="topleft"> </span><a href="#" class="top" title="Back to Top"><i class="svgs svgh angu"></i></a>
+</span>
+</body>
+</html>

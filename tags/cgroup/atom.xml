@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+    <title>CodeBook - CGroup</title>
+    <subtitle>Haruband&#x27;s TechBlog</subtitle>
+    <link rel="self" type="application/atom+xml" href="https://haruband.github.io/tags/cgroup/atom.xml"/>
+    <link rel="alternate" type="text/html" href="https://haruband.github.io"/>
+    <generator uri="https://www.getzola.org/">Zola</generator>
+    <updated>2021-04-09T00:00:00+00:00</updated>
+    <id>https://haruband.github.io/tags/cgroup/atom.xml</id>
+    <entry xml:lang="en">
+        <title>[K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석</title>
+        <published>2021-04-09T00:00:00+00:00</published>
+        <updated>2021-04-09T00:00:00+00:00</updated>
+        
+        <author>
+          <name>
+            
+              Unknown
+            
+          </name>
+        </author>
+        
+        <link rel="alternate" type="text/html" href="https://haruband.github.io/k8s-cgroupv2-privatens/"/>
+        <id>https://haruband.github.io/k8s-cgroupv2-privatens/</id>
+        
+        <content type="html" xml:base="https://haruband.github.io/k8s-cgroupv2-privatens/">&lt;p&gt;최근 공개된 우분투 21.10 은 컨테이너와 관련된 상당히 큰 부분이 변경되었다. &lt;strong&gt;마침내 CGroupV2 가 적용되었고, 도커도 업그레이드되면서 CGroup 네임스페이스의 기본값이 Private 으로 설정되었다.&lt;&#x2F;strong&gt; 오늘은 이로 인해 발생한 문제에 대해 자세히 살펴보도록 하자.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;eoddeohan-munjega-balsaenghaessneunga&quot;&gt;어떠한 문제가 발생했는가???&lt;&#x2F;h2&gt;
+&lt;p&gt;개발 서버에 우분투 21.10 을 설치한 후, 늘 쓰던대로 쿠버네티스와 Cilium 을 설치하였는데 갑자기 서비스가 정상동작하지 않는 문제가 발생하였다. 몇 가지를 확인해 본 후, 파드 네임스페이스와 호스트 네임스페이스 모두에서 파드의 ClusterIP 로는 통신이 되는데, 서비스의 ClusterIP 로는 통신이 되지 않는 현상을 발견하였다. 그래서 tcpdump 로 패킷을 확인해보니 서비스의 ClusterIP 가 소켓 기반 로드밸런싱을 통해 파드의 ClusterIP 로 변경되지 않고 그대로 남아있었다. 즉, 소켓 기반 로드밸런싱이 제대로 작동하지 않는 문제였다.&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;eoddeohge-munjega-balsaenghaessneunga&quot;&gt;어떻게 문제가 발생했는가???&lt;&#x2F;h2&gt;
+&lt;p&gt;문제의 원인은 비교적 쉽게 파악하였는데, 아래 쿠버네티스 노드의 모든 CGROUP 에 연결된 BPF 프로그램 목록을 살펴보자.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;bash&quot; class=&quot;language-bash z-code&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;$&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt; bpftool cgroup tree&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;CgroupPath&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;ID&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;       AttachType      AttachFlags     Name&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;...&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;&#x2F;sys&#x2F;fs&#x2F;cgroup&#x2F;kubepods.slice&#x2F;kubepods-burstable.slice&#x2F;kubepods-burstable-podf8371831_8021_4722_af27_93c925d25a14.slice&#x2F;docker-5cecdc399e2fa339d62a5b276331d8a5875fff7898a09d1ba1f5d710ecb12f13.scope&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;    &lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;62&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;       device          multi&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;&#x2F;sys&#x2F;fs&#x2F;cgroup&#x2F;kubepods.slice&#x2F;kubepods-burstable.slice&#x2F;kubepods-burstable-podf8371831_8021_4722_af27_93c925d25a14.slice&#x2F;docker-fbbef81081fd1fdf7653041c79cf8969be138b5bbd57db50de28cba35fd65910.scope&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;    &lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;68&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;       device          multi&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;    &lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;728&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;      connect4&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;    &lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;723&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;      connect6&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;    &lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;730&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;      post_bind4&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;    &lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;725&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;      post_bind6&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;    &lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;731&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;      sendmsg4&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;    &lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;726&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;      sendmsg6&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;    &lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;732&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;      recvmsg4&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;    &lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;727&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;      recvmsg6&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;    &lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;729&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;      getpeername4&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;    &lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;724&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;      getpeername6&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;...&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;소켓 기반 로드밸런싱에 사용되는 BPF 프로그램이 루트 CGROUP 이 아닌 특정 컨테이너의 하위 CGROUP 에 연결되어 있었다. 그리고 아래 출력을 보면 알 수 있듯이, 해당 컨테이너는 다름 아닌 Cilium 에이전트 컨테이너였다. 이는 심각한 문제를 발생시키는데, 이유는 &lt;strong&gt;소켓 시스템콜은 자신이 속한 CGROUP 만이 아니라 루트 CGROUP 까지 모든 부모 CGROUP 에 연결된 BPF 프로그램을 실행하므로 Cilium 에이전트는 간단히 루트 CGROUP 에만 필요한 BPF 프로그램을 연결하여 소켓 기반 로드밸런싱을 처리하기 때문이다.&lt;&#x2F;strong&gt;&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;bash&quot; class=&quot;language-bash z-code&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;$&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt; kubectl get pods cilium-mldd6&lt;span class=&quot;z-variable z-parameter z-option z-shell&quot;&gt;&lt;span class=&quot;z-punctuation z-definition z-parameter z-shell&quot;&gt; -&lt;&#x2F;span&gt;n&lt;&#x2F;span&gt; kube-system&lt;span class=&quot;z-variable z-parameter z-option z-shell&quot;&gt;&lt;span class=&quot;z-punctuation z-definition z-parameter z-shell&quot;&gt; -&lt;&#x2F;span&gt;o&lt;&#x2F;span&gt; yaml&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;apiVersion:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt; v1&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;kind:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt; Pod&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;metadata:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;...&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;status:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;  &lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;containerStatuses:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;  &lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;-&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt; containerID: docker:&#x2F;&#x2F;fbbef81081fd1fdf7653041c79cf8969be138b5bbd57db50de28cba35fd65910&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;    &lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;name:&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt; cilium-agent&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;...&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;이와 같은 문제가 발생한 이유는, &lt;strong&gt;소켓 기반 로드밸런싱에 사용되는 BPF 프로그램은 Cilium 에이전트에서 CGroupV2 파일시스템을 &#x2F;run&#x2F;cilium&#x2F;cgroupv2 디렉토리에 마운트한 후 루트 CGROUP 인 최상위 디렉토리에 연결하는데, 우분투 21.10 에서는 도커의 CGroup 네임스페이스의 기본값이 Private 으로 변경되어 최상위 디렉토리가 루트 CGROUP 이 아닌 해당 컨테이너의 CGROUP 이 되었기 때문이다.&lt;&#x2F;strong&gt;&lt;&#x2F;p&gt;
+&lt;h2 id=&quot;eoddeohge-munjereul-haegyeolhaessneunga&quot;&gt;어떻게 문제를 해결했는가???&lt;&#x2F;h2&gt;
+&lt;p&gt;가장 간단한 해결책은 도커의 CGroup 네임스페이스의 기본값을 Host 로 변경해버리는 것이겠지만, 이보다는 Cilium 에서 추천하는 해결책을 소개하도록 하겠다. 이는 현재 Cilium 의 Helm 차트에 적용되어 있는 방법이다.&lt;&#x2F;p&gt;
+&lt;pre class=&quot;z-code&quot;&gt;&lt;code&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;apiVersion: apps&#x2F;v1
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;kind: DaemonSet
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;metadata:
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;  name: cilium
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;  namespace: {{ .Release.Namespace }}
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;spec:
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;  template:
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;    spec:
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      initContainers:
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      - name: mount-cgroup
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;        image: {{ include &amp;quot;cilium.image&amp;quot; .Values.image | quote }}
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;        imagePullPolicy: {{ .Values.image.pullPolicy }}
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;        env:
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;        - name: CGROUP_ROOT
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;          value: {{ .Values.cgroup.hostRoot }}
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;        - name: BIN_PATH
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;          value: {{ .Values.cni.binPath }}
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;        command:
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;        - sh
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;        - -ec
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;        - |
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;          cp &#x2F;usr&#x2F;bin&#x2F;cilium-mount &#x2F;hostbin&#x2F;cilium-mount;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;          nsenter --cgroup=&#x2F;hostproc&#x2F;1&#x2F;ns&#x2F;cgroup --mount=&#x2F;hostproc&#x2F;1&#x2F;ns&#x2F;mnt &amp;quot;${BIN_PATH}&#x2F;cilium-mount&amp;quot; $CGROUP_ROOT;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;          rm &#x2F;hostbin&#x2F;cilium-mount
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;        volumeMounts:
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;        - name: hostproc
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;          mountPath: &#x2F;hostproc
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;        - name: cni-path
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;          mountPath: &#x2F;hostbin
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;        securityContext:
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;          privileged: true
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      volumes:
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;      - name: hostproc
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;        hostPath:
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;          path: &#x2F;proc
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-text z-plain&quot;&gt;          type: Directory
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;위는 Helm 차트에 적용되어 있는 Cilium 에이전트의 데몬셋의 일부이다. 언급된 문제를 해결하기 위해 mount-cgroup 이라는 initContainer 가 추가되어 있으며, 이는 nsenter 를 이용하여 호스트 네임스페이스의 1번 프로세스의 CGroup 과 Mount 네임스페이스로 변경 후 &#x2F;run&#x2F;cilium&#x2F;cgroupv2 디렉토리에 CGroupV2 파일시스템을 마운트한다. 즉, 호스트 파일시스템의 &#x2F;run&#x2F;cilium&#x2F;cgroupv2 디렉토리에 최상위 네임스페이스의 CGroupV2 파일시스템이 마운트된 것이다. 그리고 Cilium 에이전트 컨테이너에서는 hostPath 를 이용하여 호스트 파일시스템의 &#x2F;run&#x2F;cilium&#x2F;cgroupv2 디렉토리를 그대로 사용하면 해당 문제는 완벽히 해결된다.&lt;&#x2F;p&gt;
+&lt;p&gt;앞에서 언급한 해결책을 적용한 다음 쿠버네티스 노드의 모든 CGROUP 에 연결된 BPF 프로그램 목록을 살펴보자.&lt;&#x2F;p&gt;
+&lt;pre data-lang=&quot;bash&quot; class=&quot;language-bash z-code&quot;&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;$&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt; bpftool cgroup tree&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;CgroupPath&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;ID&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;       AttachType      AttachFlags     Name&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;&#x2F;sys&#x2F;fs&#x2F;cgroup&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;1506&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;     connect4&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;1501&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;     connect6&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;1508&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;     post_bind4&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;1503&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;     post_bind6&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;1509&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;     sendmsg4&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;1504&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;     sendmsg6&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;1510&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;     recvmsg4&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;1505&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;     recvmsg6&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;1507&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;     getpeername4&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;1502&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;     getpeername6&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;...&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;&#x2F;sys&#x2F;fs&#x2F;cgroup&#x2F;kubepods.slice&#x2F;kubepods-burstable.slice&#x2F;kubepods-burstable-podf8371831_8021_4722_af27_93c925d25a14.slice&#x2F;docker-5cecdc399e2fa339d62a5b276331d8a5875fff7898a09d1ba1f5d710ecb12f13.scope&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;    &lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;62&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;       device          multi&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;&#x2F;sys&#x2F;fs&#x2F;cgroup&#x2F;kubepods.slice&#x2F;kubepods-burstable.slice&#x2F;kubepods-burstable-podf8371831_8021_4722_af27_93c925d25a14.slice&#x2F;docker-fbbef81081fd1fdf7653041c79cf8969be138b5bbd57db50de28cba35fd65910.scope&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;    &lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;68&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;&lt;span class=&quot;z-meta z-function-call z-arguments z-shell&quot;&gt;       device          multi&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;span class=&quot;z-source z-shell z-bash&quot;&gt;&lt;span class=&quot;z-meta z-function-call z-shell&quot;&gt;&lt;span class=&quot;z-variable z-function z-shell&quot;&gt;...&lt;&#x2F;span&gt;&lt;&#x2F;span&gt;
+&lt;&#x2F;span&gt;&lt;&#x2F;code&gt;&lt;&#x2F;pre&gt;
+&lt;p&gt;위에서 보는 것처럼, 루트 CGROUP 에 소켓 기반 로드밸런싱에서 필요로 하는 모든 BPF 프로그램이 연결되어 있는 것을 볼 수 있다.&lt;&#x2F;p&gt;
+</content>
+        
+    </entry>
+</feed>

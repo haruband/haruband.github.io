@@ -1,0 +1,328 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://haruband.github.io/js/theme.min.js" integrity="sha384-pb++s6uBRKaQv+iAXpgA/H3IlpLZdO14tTwuCI7uXmz4aaZdByoCcM+6BhynMq/1"></script>
+  <link rel="stylesheet" href="https://haruband.github.io/abridge.css?h=98ebdf6fd3d59dfb2edf" />
+  <meta charset="utf-8" />
+  <meta http-equiv="x-ua-compatible" content="ie=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="base" content="https://haruband.github.io" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#333333" />
+  <meta name="msapplication-TileColor" content="#333333" />
+  <link rel="manifest" href="https://haruband.github.io/manifest.min.json" />
+  <link rel="mask-icon" href="https://haruband.github.io/safari-pinned-tab.svg" color="#ff9900" />
+  <link rel="icon" type="image/svg+xml" href="https://haruband.github.io/favicon.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="https://haruband.github.io/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="https://haruband.github.io/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="https://haruband.github.io/favicon-16x16.png" />
+  <link rel="alternate" type="application/atom+xml" title="CodeBook Atom Feed" href="https://haruband.github.io/atom.xml" />
+  <meta name="robots" content="index, follow" />
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <title>[eBPF] BPF 실행파일 로딩 과정 분석 (메모리 재배치) | CodeBook</title>
+  <meta name="author" content="Inhyeok Kim" />
+  <meta name="copyright" content="CodeBook" />
+  <meta name="description" content="Haruband&#x27;s TechBlog" />
+  <link rel="canonical" href="https://haruband.github.io/ebpf-loading-memory/" />
+  <meta name="keywords" content="Arrow, Datafusion, Kubernetes" />
+  <meta name="google-site-verification" content="Your Google Site verification code." />
+  <meta name="msvalidate.01" content="Your Bing Site verification code." />
+  <meta property="og:url" content="https://haruband.github.io/ebpf-loading-memory/" />
+  <meta name="twitter:url" content="https://haruband.github.io/ebpf-loading-memory/" />
+  <meta property="og:description" content="Haruband&#x27;s TechBlog" />
+  <meta name="twitter:description" content="Haruband&#x27;s TechBlog" />
+  <meta property="og:title" content="[eBPF] BPF 실행파일 로딩 과정 분석 (메모리 재배치) | CodeBook" />
+  <meta name="twitter:title" content="[eBPF] BPF 실행파일 로딩 과정 분석 (메모리 재배치) | CodeBook" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:site_name" content="CodeBook" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:type" content="website" />
+  <meta property="og:updated_time" content="2021-08-15" />
+  <meta name="twitter:site" content="@your-user-name" />
+  <meta name="twitter:creator" content="@your-user-name" />
+  <script defer src="https://haruband.github.io/js/abridge.min.js?h=e0f9a881a665c86cce9c" integrity="sha384-QF67y7RnPkuDrJNQqn3/7nYxqxWkW/qHI7zN0WTES1aXbf+TotoByRBb835fUE6U"></script>
+  <noscript><link rel="stylesheet" href="https://haruband.github.io/nojs.css" /></noscript>
+</head>
+<body>
+  <header>
+    <nav>
+      <div><big><a href="https://haruband.github.io" title="CodeBook">CodeBook</a></big></div>
+      <div>
+
+        <div>
+          <ul><li><a class="s110" href="https://haruband.github.io/archive/"> Posts </a></li><li><a class="s110" href="https://haruband.github.io/tags/"> Tags </a></li><li><i type="reset" id="mode" class="js svgs adjust"></i></ul>
+        </div>
+
+        <div>
+          <div>
+            <form autocomplete=off class="js" name="goSearch" id="searchbox">
+              <div class="searchd">
+                <input id="searchinput" type="text" placeholder="Search" title="Search" />
+                <button type="submit" title="Search" class="svgs svgm search"></button>
+              </div>
+              <div class="results"><div id="suggestions"></div></div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </nav>
+  </header>
+  <main>
+    <article>
+      <h1><a href="https://haruband.github.io/ebpf-loading-memory/">[eBPF] BPF 실행파일 로딩 과정 분석 (메모리 재배치)</a></h1>
+
+      <span class="s95"> Inhyeok Kim <span class="rpad"></span> August 15, 2021 <span class="rpad"></span>Updated: August 15, 2021 <span class="rpad"></span> #<a href="https://haruband.github.io/tags/ebpf/">eBPF</a> </span>
+
+    
+        <div class="block">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/ebpf/">eBPF (Series)</a><br>
+            <a href="https://haruband.github.io/ebpf-core/">[eBPF] CO-RE (Compile Once - Run Everywhere) 기능 분석</a><br>
+            <a class="scur" href="https://haruband.github.io/ebpf-loading-memory/">[eBPF] BPF 실행파일 로딩 과정 분석 (메모리 재배치)</a><br> 
+          
+            <a href="https://haruband.github.io/ebpf-loading-program/">[eBPF] BPF 실행파일 로딩 과정 분석 (서브프로그램)</a><br>
+            <a href="https://haruband.github.io/ebpf-loading-jit/">[eBPF] BPF 실행파일 로딩 과정 분석 (JIT)</a><br>
+      </div>
+    </div>
+
+
+<p>BPF 는 일반적인 프로그램과 유사한 방식으로 개발하기 때문에 유사한 실행파일 및 메모리 구조를 가지고 있지만, 커널 안에서 제한된 환경으로 실행되기 때문에 로딩(loading)하는 과정은 상당히 다르다. 오늘은 BPF 의 실행파일 및 메모리 구조에 대해 간단히 살펴본 후, 이를 로딩하는 과정에 대해 분석해보도록 하자.</p>
+<p>일반적인 실행파일에서 가장 중요한 두 가지는 코드와 데이터이다. 코드는 말그대로 상위언어를 컴파일한 머신코드를 의미하고, 데이터는 실행시 코드가 참조하는 메모리를 의미한다. 데이터는 스택과 힙같이 실행시 메모리가 할당/해제되는 동적 데이터와 전역변수처럼 코드에서 선언되는 정적 데이터로 나뉘는데, 정적 데이터는 실행파일을 로딩할 때 메모리가 할당되고 해당 메모리를 참조하는 코드도 재배치(relocation)된다. 그리고 정적 데이터는 크게 읽기전용 변수, 초기화된 전역변수 그리고 초기화되지 않은 전역변수로 구분되는데, 아래 코드(<a rel="noopener" target="_blank" href="https://github.com/iovisor/bcc">bcc</a> 의 <a rel="noopener" target="_blank" href="https://github.com/iovisor/bcc/blob/master/libbpf-tools/runqslower.bpf.c">runqslower</a> 예제코드를 약간 변형한 것이다)를 보면서 조금 더 설명하도록 하겠다.</p>
+<pre data-lang="c" class="language-c z-code"><code class="language-c" data-lang="c"><span class="z-source z-c"><span class="z-keyword z-operator z-variadic z-c">...</span>
+</span><span class="z-source z-c"><span class="z-storage z-type z-c">int</span> data0 <span class="z-keyword z-operator z-assignment z-c">=</span> <span class="z-constant z-numeric z-integer z-decimal z-c">1</span><span class="z-punctuation z-terminator z-c">;</span>
+</span><span class="z-source z-c"><span class="z-storage z-type z-c">int</span> data1 <span class="z-keyword z-operator z-assignment z-c">=</span> <span class="z-constant z-numeric z-integer z-decimal z-c">1</span><span class="z-punctuation z-terminator z-c">;</span>
+</span><span class="z-source z-c"><span class="z-storage z-type z-c">int</span> bss0<span class="z-punctuation z-terminator z-c">;</span>
+</span><span class="z-source z-c"><span class="z-storage z-modifier z-c">const</span> <span class="z-storage z-type z-c">char</span> rodata0<span class="z-meta z-brackets z-c"><span class="z-punctuation z-section z-brackets z-begin z-c">[</span><span class="z-punctuation z-section z-brackets z-end z-c">]</span></span> <span class="z-keyword z-operator z-assignment z-c">=</span> <span class="z-string z-quoted z-double z-c"><span class="z-punctuation z-definition z-string z-begin z-c">&quot;</span>ebpf<span class="z-punctuation z-definition z-string z-end z-c">&quot;</span></span><span class="z-punctuation z-terminator z-c">;</span>
+</span><span class="z-source z-c">
+</span><span class="z-source z-c"><span class="z-meta z-assumed-macro z-c"><span class="z-variable z-function z-assumed-macro z-c">SEC</span><span class="z-punctuation z-section z-group z-begin z-c">(</span><span class="z-string z-quoted z-double z-c"><span class="z-punctuation z-definition z-string z-begin z-c">&quot;</span>tp_btf/sched_switch<span class="z-punctuation z-definition z-string z-end z-c">&quot;</span></span><span class="z-punctuation z-section z-group z-end z-c">)</span></span>
+</span><span class="z-source z-c"><span class="z-storage z-type z-c">int</span> <span class="z-meta z-function z-c"><span class="z-entity z-name z-function z-c">handle__sched_switch</span></span><span class="z-meta z-function z-parameters z-c"><span class="z-meta z-group z-c"><span class="z-punctuation z-section z-group z-begin z-c">(</span></span></span><span class="z-meta z-function z-parameters z-c"><span class="z-meta z-group z-c">u64 <span class="z-keyword z-operator z-c">*</span><span class="z-variable z-parameter z-c">ctx</span><span class="z-punctuation z-section z-group z-end z-c">)</span></span></span><span class="z-meta z-function z-c">
+</span></span><span class="z-source z-c"><span class="z-meta z-function z-c"></span><span class="z-meta z-function z-c"><span class="z-meta z-block z-c"><span class="z-punctuation z-section z-block z-begin z-c">{</span></span></span><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">  <span class="z-comment z-block z-c"><span class="z-punctuation z-definition z-comment z-c">/*</span> TP_PROTO(bool preempt, struct task_struct *prev,
+</span></span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c"><span class="z-comment z-block z-c">   <span class="z-punctuation z-definition z-comment z-c">*</span>      struct task_struct *next)
+</span></span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c"><span class="z-comment z-block z-c">   <span class="z-punctuation z-definition z-comment z-c">*/</span></span>
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">  <span class="z-storage z-type z-c">struct</span> task_struct <span class="z-keyword z-operator z-c">*</span>prev <span class="z-keyword z-operator z-assignment z-c">=</span> <span class="z-meta z-group z-c"><span class="z-punctuation z-section z-group z-begin z-c">(</span><span class="z-storage z-type z-c">struct</span> task_struct <span class="z-keyword z-operator z-c">*</span><span class="z-punctuation z-section z-group z-end z-c">)</span></span>ctx<span class="z-meta z-brackets z-c"><span class="z-punctuation z-section z-brackets z-begin z-c">[</span><span class="z-constant z-numeric z-integer z-decimal z-c">1</span><span class="z-punctuation z-section z-brackets z-end z-c">]</span></span><span class="z-punctuation z-terminator z-c">;</span>
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">  <span class="z-storage z-type z-c">struct</span> task_struct <span class="z-keyword z-operator z-c">*</span>next <span class="z-keyword z-operator z-assignment z-c">=</span> <span class="z-meta z-group z-c"><span class="z-punctuation z-section z-group z-begin z-c">(</span><span class="z-storage z-type z-c">struct</span> task_struct <span class="z-keyword z-operator z-c">*</span><span class="z-punctuation z-section z-group z-end z-c">)</span></span>ctx<span class="z-meta z-brackets z-c"><span class="z-punctuation z-section z-brackets z-begin z-c">[</span><span class="z-constant z-numeric z-integer z-decimal z-c">2</span><span class="z-punctuation z-section z-brackets z-end z-c">]</span></span><span class="z-punctuation z-terminator z-c">;</span>
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">  <span class="z-storage z-type z-c">struct</span> event event <span class="z-keyword z-operator z-assignment z-c">=</span> <span class="z-meta z-block z-c"><span class="z-punctuation z-section z-block z-begin z-c">{</span><span class="z-punctuation z-section z-block z-end z-c">}</span></span><span class="z-punctuation z-terminator z-c">;</span>
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">  u64 <span class="z-keyword z-operator z-c">*</span>tsp<span class="z-punctuation z-separator z-c">,</span> delta_us<span class="z-punctuation z-terminator z-c">;</span>
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">  <span class="z-storage z-type z-c">long</span> state<span class="z-punctuation z-terminator z-c">;</span>
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">  u32 pid<span class="z-punctuation z-terminator z-c">;</span>
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">  <span class="z-comment z-block z-c"><span class="z-punctuation z-definition z-comment z-c">/*</span> ivcsw: treat like an enqueue event and store timestamp <span class="z-punctuation z-definition z-comment z-c">*/</span></span>
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">  <span class="z-keyword z-control z-c">if</span> <span class="z-meta z-group z-c"><span class="z-punctuation z-section z-group z-begin z-c">(</span>prev<span class="z-punctuation z-accessor z-c">-&gt;</span>state <span class="z-keyword z-operator z-comparison z-c">==</span> data1<span class="z-punctuation z-section z-group z-end z-c">)</span></span>
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">    <span class="z-meta z-function-call z-c"><span class="z-variable z-function z-c">trace_enqueue</span><span class="z-meta z-group z-c"><span class="z-punctuation z-section z-group z-begin z-c">(</span></span></span><span class="z-meta z-function-call z-c"><span class="z-meta z-group z-c">prev<span class="z-punctuation z-accessor z-c">-&gt;</span>tgid<span class="z-punctuation z-separator z-c">,</span> prev<span class="z-punctuation z-accessor z-c">-&gt;</span>pid</span></span><span class="z-meta z-function-call z-c"><span class="z-meta z-group z-c"><span class="z-punctuation z-section z-group z-end z-c">)</span></span></span><span class="z-punctuation z-terminator z-c">;</span>
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">  pid <span class="z-keyword z-operator z-assignment z-c">=</span> next<span class="z-punctuation z-accessor z-c">-&gt;</span>pid<span class="z-punctuation z-terminator z-c">;</span>
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c">  <span class="z-keyword z-operator z-variadic z-c">...</span>
+</span></span></span><span class="z-source z-c"><span class="z-meta z-function z-c"><span class="z-meta z-block z-c"></span></span><span class="z-meta z-function z-c"><span class="z-meta z-block z-c"><span class="z-punctuation z-section z-block z-end z-c">}</span></span></span>
+</span><span class="z-source z-c"><span class="z-keyword z-operator z-variadic z-c">...</span>
+</span></code></pre>
+<p>우선 읽기전용 변수는 rodata0 처럼 const 로 선언된 전역변수를 의미하고, 해당 메모리에 대한 쓰기 작업을 금지하기 위해 읽기전용의 페이지를 할당받아 사용한다. 그리고 data0 과 data1 같이 초기값을 가지고 있는 전역변수는 초기화된 전역변수로 분류되고, bss0 과 같이 초기값을 가지고 있지 않은 전역변수는 초기화되지 않은 전역변수로 분류된다. 아래는 위의 예제코드를 컴파일한 후 objdump 를 이용해서 섹션 테이블과 심볼 테이블을 출력한 것이다.</p>
+<pre class="z-code"><code><span class="z-text z-plain">.output/runqslower.bpf.o:       file format elf64-bpf
+</span><span class="z-text z-plain">
+</span><span class="z-text z-plain">architecture: bpfel
+</span><span class="z-text z-plain">start address: 0x0000000000000000
+</span><span class="z-text z-plain">
+</span><span class="z-text z-plain">Program Header:
+</span><span class="z-text z-plain">
+</span><span class="z-text z-plain">Dynamic Section:
+</span><span class="z-text z-plain">Sections:
+</span><span class="z-text z-plain">Idx Name                        Size     VMA              Type
+</span><span class="z-text z-plain">  0                             00000000 0000000000000000
+</span><span class="z-text z-plain">  1 .text                       00000000 0000000000000000 TEXT
+</span><span class="z-text z-plain">  2 tp_btf/sched_wakeup         000000f8 0000000000000000 TEXT
+</span><span class="z-text z-plain">  3 tp_btf/sched_wakeup_new     000000f8 0000000000000000 TEXT
+</span><span class="z-text z-plain">  4 tp_btf/sched_switch         00000318 0000000000000000 TEXT
+</span><span class="z-text z-plain">  5 .rodata                     00000015 0000000000000000 DATA
+</span><span class="z-text z-plain">  6 .data                       00000008 0000000000000000 DATA
+</span><span class="z-text z-plain">  7 .maps                       00000038 0000000000000000 DATA
+</span><span class="z-text z-plain">  8 license                     00000004 0000000000000000 DATA
+</span><span class="z-text z-plain">  9 .bss                        00000004 0000000000000000 BSS
+</span><span class="z-text z-plain"> 10 .BTF                        00005e0c 0000000000000000
+</span><span class="z-text z-plain"> 11 .BTF.ext                    0000068c 0000000000000000
+</span><span class="z-text z-plain"> 12 .symtab                     000002a0 0000000000000000
+</span><span class="z-text z-plain"> 13 .reltp_btf/sched_wakeup     00000030 0000000000000000
+</span><span class="z-text z-plain"> 14 .reltp_btf/sched_wakeup_new 00000030 0000000000000000
+</span><span class="z-text z-plain"> 15 .reltp_btf/sched_switch     00000080 0000000000000000
+</span><span class="z-text z-plain"> 16 .rel.BTF                    000000a0 0000000000000000
+</span><span class="z-text z-plain"> 17 .rel.BTF.ext                00000630 0000000000000000
+</span><span class="z-text z-plain"> 18 .llvm_addrsig               00000009 0000000000000000
+</span><span class="z-text z-plain"> 19 .strtab                     0000017c 0000000000000000
+</span><span class="z-text z-plain">
+</span><span class="z-text z-plain">SYMBOL TABLE:
+</span><span class="z-text z-plain">0000000000000000 g     O .bss   0000000000000004 bss0
+</span><span class="z-text z-plain">0000000000000000 g     O .data  0000000000000004 data0
+</span><span class="z-text z-plain">0000000000000004 g     O .data  0000000000000004 data1
+</span><span class="z-text z-plain">0000000000000000 g     F tp_btf/sched_switch    0000000000000318 handle__sched_switch
+</span><span class="z-text z-plain">0000000000000010 g     O .rodata        0000000000000005 rodata0
+</span><span class="z-text z-plain">...
+</span></code></pre>
+<p>리눅스에서 주로 사용하는 ELF 실행파일 구조이고, 용도에 따라 다양한 섹션으로 구성되어 있다. 심볼 테이블을 보면 읽기전용 변수인 rodata0 은 읽기전용 데이터 섹션인 .rodata 에 속해있고, 초기화된 전역변수인 data0 과 data1 은 .data 섹션에, 그리고 초기화되지 않은 전역변수인 bss0 은 .bss 섹션에 포함되어 있는 것을 볼 수 있다. 여기서 .data 섹션과 .bss 섹션의 차이점은 .data 섹션은 실제 초기값들을 실행파일 안에 포함하고 있지만, .bss 섹션은 초기값이 없기 때문에 실행파일 안은 비어있고 로딩 시에 메모리를 할당받은 후 0 으로 초기화한다.</p>
+<p>일반적인 프로그램을 실행할 때는 .data, .rodata, 그리고 .bss 섹션까지 프로세스의 가상 주소 공간에 필요한 메모리를 할당받아 실행파일로부터 필요한 데이터를 복사한 후 로딩 작업을 마무리하지만, BPF 는 커널 주소 공간에서 실행되기 때문에 강도 높은 안정성과 보안성을 위해 다른 방식으로 로딩 작업을 진행한다. 이후 자세한 로딩 과정은 <a rel="noopener" target="_blank" href="https://github.com/torvalds/linux/blob/master/tools/lib/bpf/libbpf.c">libbpf</a>를 기준으로 설명하도록 하겠다.</p>
+<p>우선, BPF 실행파일의 .data, .rodata, 그리고 .bss 섹션을 각각 BPF 맵(map)으로 만든다. BPF 맵은 사용자 코드와 BPF 코드가 데이터를 공유하는 가장 보편적인 방식으로, .data 와 .rodata 섹션은 BPF 맵을 만든 다음 실행파일의 각 섹션에 있는 데이터를 복사하고, .bss 섹션은 0 으로 초기화되어 있는 BPF 맵을 만든다. 그리고 각 섹션에 있는 변수를 참조하는 코드를 재배치해야 하는데, 우선 앞의 예제에서 data1 변수를 참조하는 부분의 코드를 살펴보자.</p>
+<pre class="z-code"><code><span class="z-text z-plain">0000000000000000 &lt;handle__sched_switch&gt;:
+</span><span class="z-text z-plain">       0:       bf 16 00 00 00 00 00 00 r6 = r1
+</span><span class="z-text z-plain">       1:       79 68 10 00 00 00 00 00 r8 = *(u64 *)(r6 + 16)
+</span><span class="z-text z-plain">       2:       79 67 08 00 00 00 00 00 r7 = *(u64 *)(r6 + 8)
+</span><span class="z-text z-plain">       3:       b7 01 00 00 00 00 00 00 r1 = 0
+</span><span class="z-text z-plain">       4:       7b 1a e8 ff 00 00 00 00 *(u64 *)(r10 - 24) = r1
+</span><span class="z-text z-plain">       5:       7b 1a e0 ff 00 00 00 00 *(u64 *)(r10 - 32) = r1
+</span><span class="z-text z-plain">       6:       7b 1a d8 ff 00 00 00 00 *(u64 *)(r10 - 40) = r1
+</span><span class="z-text z-plain">       7:       7b 1a d0 ff 00 00 00 00 *(u64 *)(r10 - 48) = r1
+</span><span class="z-text z-plain">       8:       7b 1a c8 ff 00 00 00 00 *(u64 *)(r10 - 56) = r1
+</span><span class="z-text z-plain">       9:       7b 1a c0 ff 00 00 00 00 *(u64 *)(r10 - 64) = r1
+</span><span class="z-text z-plain">      10:       79 71 10 00 00 00 00 00 r1 = *(u64 *)(r7 + 16)
+</span><span class="z-text z-plain">      11:       18 02 00 00 00 00 00 00 00 00 00 00 00 00 00 00 r2 = 0 ll
+</span><span class="z-text z-plain">      13:       61 22 00 00 00 00 00 00 r2 = *(u32 *)(r2 + 0)
+</span><span class="z-text z-plain">      14:       67 02 00 00 20 00 00 00 r2 &lt;&lt;= 32
+</span><span class="z-text z-plain">      15:       c7 02 00 00 20 00 00 00 r2 s&gt;&gt;= 32
+</span><span class="z-text z-plain">      16:       5d 21 1c 00 00 00 00 00 if r1 != r2 goto +28 &lt;LBB2_7&gt;
+</span><span class="z-text z-plain">      ...
+</span></code></pre>
+<p>위의 (11:) 명령어는 data1 에 있는 값을 r2 레지스터로 복사하는 부분인데, opcode 와 레지스터 정보만 있고 다른 모든 값은 0 으로 채워져있다. 이는 커널에 BPF 코드를 넘기기 전에 아래의 재배치 정보를 이용하여 필요한 다른 값으로 채워진다.</p>
+<pre class="z-code"><code><span class="z-text z-plain">RELOCATION RECORDS FOR [tp_btf/sched_switch]:
+</span><span class="z-text z-plain">OFFSET           TYPE                     VALUE
+</span><span class="z-text z-plain">0000000000000058 R_BPF_64_64              data1
+</span><span class="z-text z-plain">00000000000000a8 R_BPF_64_64              targ_tgid
+</span><span class="z-text z-plain">00000000000000e8 R_BPF_64_64              targ_pid
+</span><span class="z-text z-plain">0000000000000148 R_BPF_64_64              start
+</span><span class="z-text z-plain">...
+</span></code></pre>
+<p>위의 재배치 목록의 첫 번째 항목은 tp_btf/sched_switch 섹션(handle__sched_switch 함수)의 오프셋이 0x58 인, (11:) 명령어에서 data1 변수를 참조하고 있다는 의미이다. 이 명령어는 보는 것처럼 8 바이트씩 2 개의 명령어로 구성되어 있는데, 재배치 과정에서 첫 번째 명령어에는 data1 변수가 속해있는 섹션(.data)으로 만들어진 BPF 맵의 파일디스크립터를 집어넣고, 두 번째 명령어에는 data1 변수가 속해있는 섹션에서의 오프셋을 집어넣는다. 아래는 필자가 사용 중인 서버에서 앞의 예제를 실행한 프로세스의 파일디스크립터 정보를 출력한 것이다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">/proc/4812/fd#</span></span><span class="z-meta z-function-call z-arguments z-shell"> ls<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> -</span>lh</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">lrwx------</span></span><span class="z-meta z-function-call z-arguments z-shell"> 1 root root 64 Sep 16 05:13 0 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> /dev/tty1</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">lrwx------</span></span><span class="z-meta z-function-call z-arguments z-shell"> 1 root root 64 Sep 16 05:13 1 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> /dev/tty1</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">lrwx------</span></span><span class="z-meta z-function-call z-arguments z-shell"> 1 root root 64 Sep 16 05:56 10 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> anon_inode:bpf-prog</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">lrwx------</span></span><span class="z-meta z-function-call z-arguments z-shell"> 1 root root 64 Sep 16 05:56 11 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> anon_inode:bpf-prog</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">lr-x------</span></span><span class="z-meta z-function-call z-arguments z-shell"> 1 root root 64 Sep 16 05:56 12 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> anon_inode:bpf_link</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">lr-x------</span></span><span class="z-meta z-function-call z-arguments z-shell"> 1 root root 64 Sep 16 05:56 13 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> anon_inode:bpf_link</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">lr-x------</span></span><span class="z-meta z-function-call z-arguments z-shell"> 1 root root 64 Sep 16 05:56 14 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> anon_inode:bpf_link</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">lrwx------</span></span><span class="z-meta z-function-call z-arguments z-shell"> 1 root root 64 Sep 16 05:56 15 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> <span class="z-string z-quoted z-single z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&#39;</span>anon_inode:[eventpoll]<span class="z-punctuation z-definition z-string z-end z-shell">&#39;</span></span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">lrwx------</span></span><span class="z-meta z-function-call z-arguments z-shell"> 1 root root 64 Sep 16 05:56 16 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> <span class="z-string z-quoted z-single z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&#39;</span>anon_inode:[perf_event]<span class="z-punctuation z-definition z-string z-end z-shell">&#39;</span></span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">lrwx------</span></span><span class="z-meta z-function-call z-arguments z-shell"> 1 root root 64 Sep 16 05:56 17 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> <span class="z-string z-quoted z-single z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&#39;</span>anon_inode:[perf_event]<span class="z-punctuation z-definition z-string z-end z-shell">&#39;</span></span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">lrwx------</span></span><span class="z-meta z-function-call z-arguments z-shell"> 1 root root 64 Sep 16 05:56 18 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> <span class="z-string z-quoted z-single z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&#39;</span>anon_inode:[perf_event]<span class="z-punctuation z-definition z-string z-end z-shell">&#39;</span></span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">lrwx------</span></span><span class="z-meta z-function-call z-arguments z-shell"> 1 root root 64 Sep 16 05:13 2 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> /dev/tty1</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">lr-x------</span></span><span class="z-meta z-function-call z-arguments z-shell"> 1 root root 64 Sep 16 05:13 3 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> anon_inode:btf</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">lrwx------</span></span><span class="z-meta z-function-call z-arguments z-shell"> 1 root root 64 Sep 16 05:56 4 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> anon_inode:bpf-map</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">lrwx------</span></span><span class="z-meta z-function-call z-arguments z-shell"> 1 root root 64 Sep 16 05:56 5 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> anon_inode:bpf-map</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">lrwx------</span></span><span class="z-meta z-function-call z-arguments z-shell"> 1 root root 64 Sep 16 05:13 6 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> anon_inode:bpf-map</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">lrwx------</span></span><span class="z-meta z-function-call z-arguments z-shell"> 1 root root 64 Sep 16 05:13 7 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> anon_inode:bpf-map</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">lrwx------</span></span><span class="z-meta z-function-call z-arguments z-shell"> 1 root root 64 Sep 16 05:56 8 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> anon_inode:bpf-map</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">lrwx------</span></span><span class="z-meta z-function-call z-arguments z-shell"> 1 root root 64 Sep 16 05:56 9 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> anon_inode:bpf-prog</span>
+</span></code></pre>
+<p>해당 프로세스의 파일디스크립터 목록 중 6 번이 .data 섹션에 해당하는 BPF 맵이기 때문에 (11:) 명령어의 첫 번째 명령어에는 6 이라는 값이 채워지고, 심볼 테이블을 보면 data1 변수는 .data 섹션에서 오프셋이 4 이기 때문에 (11:) 명령어의 두 번째 명령어에는 4 라는 값이 채워진다. 이러한 재배치 과정을 통해 나온 BPF 코드는 아래와 같다.</p>
+<pre class="z-code"><code><span class="z-text z-plain">$ bpftool map
+</span><span class="z-text z-plain">8105: array  name runqslow.data  flags 0x400
+</span><span class="z-text z-plain">	key 4B  value 8B  max_entries 1  memlock 4096B
+</span><span class="z-text z-plain">	btf_id 944
+</span><span class="z-text z-plain">8106: array  name runqslow.rodata  flags 0x480
+</span><span class="z-text z-plain">	key 4B  value 21B  max_entries 1  memlock 4096B
+</span><span class="z-text z-plain">	btf_id 944  frozen
+</span><span class="z-text z-plain">8107: array  name runqslow.bss  flags 0x400
+</span><span class="z-text z-plain">	key 4B  value 4B  max_entries 1  memlock 4096B
+</span><span class="z-text z-plain">	btf_id 944
+</span><span class="z-text z-plain">
+</span><span class="z-text z-plain">$ bpftool prog dump xlated id 62928
+</span><span class="z-text z-plain">int handle__sched_switch(u64 * ctx):
+</span><span class="z-text z-plain">; int handle__sched_switch(u64 *ctx)
+</span><span class="z-text z-plain">   0: (bf) r6 = r1
+</span><span class="z-text z-plain">; struct task_struct *next = (struct task_struct *)ctx[2];
+</span><span class="z-text z-plain">   1: (79) r8 = *(u64 *)(r6 +16)
+</span><span class="z-text z-plain">; struct task_struct *prev = (struct task_struct *)ctx[1];
+</span><span class="z-text z-plain">   2: (79) r7 = *(u64 *)(r6 +8)
+</span><span class="z-text z-plain">   3: (b7) r1 = 0
+</span><span class="z-text z-plain">; if (prev-&gt;state == data1)
+</span><span class="z-text z-plain">  10: (79) r1 = *(u64 *)(r7 +24)
+</span><span class="z-text z-plain">; if (prev-&gt;state == data1)
+</span><span class="z-text z-plain">  11: (18) r2 = map[id:8105][0]+4
+</span><span class="z-text z-plain">  13: (61) r2 = *(u32 *)(r2 +0)
+</span><span class="z-text z-plain">  14: (67) r2 &lt;&lt;= 32
+</span><span class="z-text z-plain">  15: (c7) r2 s&gt;&gt;= 32
+</span><span class="z-text z-plain">; if (prev-&gt;state == data1)
+</span><span class="z-text z-plain">  16: (5d) if r1 != r2 goto pc+20
+</span><span class="z-text z-plain">  ...
+</span></code></pre>
+<p>우선 현재 사용 중인 BPF 맵 목록을 보면 각 섹션(.data, .rodata, .bss)에 해당하는 BPF 맵에 대한 정보를 볼 수 있다. 각각의 BPF 맵은 1개의 요소만을 가지는 arraymap 형태로 만들어지고, 배열 요소의 크기는 각 섹션의 크기와 동일하다. 그리고 위의 커널에 로딩된 BPF 코드를 살펴보면, (11:) 명령어에서 파일디스크립터(6)에 해당하는 BPF 맵의 ID(8105)와 첫 번째 배열 요소를 나타내는 인덱스(0), 그리고 해당 배열 요소에서의 오프셋(4)을 볼 수 있다.</p>
+<p>이러한 재배치 작업이 끝난 후, 커널에서는 파일디스크립터와 오프셋을 이용하여 실제 메모리 주소를 구한 다음, (11:) 명령어의 첫 번째 명령어에 해당 메모리 주소의 하위 32 비트 주소를 저장하고, 두 번째 명령어에 상위 32 비트 주소를 저장한다. 마지막으로 BPF 코드를 실제 동작 가능한 머신코드(x86)로 JIT(Just-In-Time) 컴파일한 결과물은 아래와 같다.</p>
+<pre class="z-code"><code><span class="z-text z-plain">$ bpftool prog dump jited id 62928
+</span><span class="z-text z-plain">int handle__sched_switch(u64 * ctx):
+</span><span class="z-text z-plain">bpf_prog_474ea3c284cc8478_handle__sched_switch:
+</span><span class="z-text z-plain">; int handle__sched_switch(u64 *ctx)
+</span><span class="z-text z-plain">   0:	nopl   0x0(%rax,%rax,1)
+</span><span class="z-text z-plain">   5:	xchg   %ax,%ax
+</span><span class="z-text z-plain">   7:	push   %rbp
+</span><span class="z-text z-plain">   8:	mov    %rsp,%rbp
+</span><span class="z-text z-plain">   b:	sub    $0x40,%rsp
+</span><span class="z-text z-plain">  12:	push   %rbx
+</span><span class="z-text z-plain">  13:	push   %r13
+</span><span class="z-text z-plain">  15:	push   %r14
+</span><span class="z-text z-plain">  17:	push   %r15
+</span><span class="z-text z-plain">  19:	mov    %rdi,%rbx
+</span><span class="z-text z-plain">; struct task_struct *next = (struct task_struct *)ctx[2];
+</span><span class="z-text z-plain">  1c:	mov    0x10(%rbx),%r14
+</span><span class="z-text z-plain">; struct task_struct *prev = (struct task_struct *)ctx[1];
+</span><span class="z-text z-plain">  20:	mov    0x8(%rbx),%r13
+</span><span class="z-text z-plain">  24:	xor    %edi,%edi
+</span><span class="z-text z-plain">; if (prev-&gt;state == data1)
+</span><span class="z-text z-plain">  3e:	test   %r13,%r13
+</span><span class="z-text z-plain">  41:	jne    0x0000000000000047
+</span><span class="z-text z-plain">  43:	xor    %edi,%edi
+</span><span class="z-text z-plain">  45:	jmp    0x000000000000004b
+</span><span class="z-text z-plain">  47:	mov    0x18(%r13),%rdi
+</span><span class="z-text z-plain">; if (prev-&gt;state == data1)
+</span><span class="z-text z-plain">  4b:	movabs $0xffffba9640e6a004,%rsi
+</span><span class="z-text z-plain">  55:	mov    0x0(%rsi),%esi
+</span><span class="z-text z-plain">  58:	shl    $0x20,%rsi
+</span><span class="z-text z-plain">  5c:	sar    $0x20,%rsi
+</span><span class="z-text z-plain">; if (prev-&gt;state == data1)
+</span><span class="z-text z-plain">  60:	cmp    %rsi,%rdi
+</span><span class="z-text z-plain">  63:	jne    0x00000000000000cf
+</span></code></pre>
+<p>위의 (4b:) 명령어를 보면 x86 CPU 에서 r2 레지스터에 해당하는 rsi 레지스터가 할당되어 있는 것과 재배치 작업이 끝난 data1 의 메모리 주소가 들어가 있는 것을 볼 수 있다. 여기까지 BPF 코드에서 전역변수로 선언된 data1 에 접근하기 위해 필요한 재배치 과정을 살펴보았다.</p>
+
+      <nav>
+        <div>
+          <a href="https://haruband.github.io/ebpf-loading-program/">&#8249; [eBPF] BPF 실행파일 로딩 과정 분석 (서브프로그램)</a>
+        </div>
+        <div>
+          <a href="https://haruband.github.io/ebpf-core/"> [eBPF] CO-RE (Compile Once - Run Everywhere) 기능 분석 &#8250;</a>
+        </div>
+      </nav>
+    </article>
+
+    <div class="sblock">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/ebpf/">Series</a><br>
+            
+      <a href="https://haruband.github.io/ebpf-core/">[eBPF] CO-RE (Compile Once - Run Everywhere) 기능 분석</a><br>
+            
+      <a class="scur" href="https://haruband.github.io/ebpf-loading-memory/">[eBPF] BPF 실행파일 로딩 과정 분석 (메모리 재배치)</a><br>
+    
+            
+      <a href="https://haruband.github.io/ebpf-loading-program/">[eBPF] BPF 실행파일 로딩 과정 분석 (서브프로그램)</a><br>
+            
+      <a href="https://haruband.github.io/ebpf-loading-jit/">[eBPF] BPF 실행파일 로딩 과정 분석 (JIT)</a><br>
+      </div>
+  </main>
+  <footer>
+    <div class="c">
+      <nav class="tpad"><div><a href="https://www.linkedin.com/in/inhyeok-kim-7620a0b0/" target="_blank" title="LinkedIn"><i type="Button" class="svg linkedin" title="LinkedIn"></i></a><a href="https://github.com/haruband/" target="_blank" title="Github"><i type="Button" class="svg github" title="Github"></i></a></div></nav>
+      <nav class="vpad">
+        <a class="rpad s90" href="https://haruband.github.io/about/"> About </a>
+        <a class="rpad s90" href="https://haruband.github.io/contact/"> Contact </a>
+      </nav>
+      <p class="s80"> &copy; <span id="year">2025</span> CodeBook</p>
+      <p class="s80">Powered by <a href="https://www.getzola.org/" target="_blank">Zola</a> & <a href="https://github.com/jieiku/abridge/" target="_blank">Abridge</a></p>
+    </div>
+  </footer><span class="topout">
+<span class="topleft"> </span><a href="#" class="top" title="Back to Top"><i class="svgs svgh angu"></i></a>
+</span>
+</body>
+</html>

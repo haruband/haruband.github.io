@@ -1,0 +1,317 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://haruband.github.io/js/theme.min.js" integrity="sha384-pb++s6uBRKaQv+iAXpgA/H3IlpLZdO14tTwuCI7uXmz4aaZdByoCcM+6BhynMq/1"></script>
+  <link rel="stylesheet" href="https://haruband.github.io/abridge.css?h=98ebdf6fd3d59dfb2edf" />
+  <meta charset="utf-8" />
+  <meta http-equiv="x-ua-compatible" content="ie=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="base" content="https://haruband.github.io" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#333333" />
+  <meta name="msapplication-TileColor" content="#333333" />
+  <link rel="manifest" href="https://haruband.github.io/manifest.min.json" />
+  <link rel="mask-icon" href="https://haruband.github.io/safari-pinned-tab.svg" color="#ff9900" />
+  <link rel="icon" type="image/svg+xml" href="https://haruband.github.io/favicon.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="https://haruband.github.io/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="https://haruband.github.io/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="https://haruband.github.io/favicon-16x16.png" />
+  <link rel="alternate" type="application/atom+xml" title="CodeBook Atom Feed" href="https://haruband.github.io/atom.xml" />
+  <meta name="robots" content="index, follow" />
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <title>[K8S] Cilium CGroupV2/PrivateNS 문제 분석 | CodeBook</title>
+  <meta name="author" content="Inhyeok Kim" />
+  <meta name="copyright" content="CodeBook" />
+  <meta name="description" content="Haruband&#x27;s TechBlog" />
+  <link rel="canonical" href="https://haruband.github.io/k8s-cgroupv2-privatens/" />
+  <meta name="keywords" content="Arrow, Datafusion, Kubernetes" />
+  <meta name="google-site-verification" content="Your Google Site verification code." />
+  <meta name="msvalidate.01" content="Your Bing Site verification code." />
+  <meta property="og:url" content="https://haruband.github.io/k8s-cgroupv2-privatens/" />
+  <meta name="twitter:url" content="https://haruband.github.io/k8s-cgroupv2-privatens/" />
+  <meta property="og:description" content="Haruband&#x27;s TechBlog" />
+  <meta name="twitter:description" content="Haruband&#x27;s TechBlog" />
+  <meta property="og:title" content="[K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석 | CodeBook" />
+  <meta name="twitter:title" content="[K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석 | CodeBook" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:site_name" content="CodeBook" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:type" content="website" />
+  <meta property="og:updated_time" content="2021-04-09" />
+  <meta name="twitter:site" content="@your-user-name" />
+  <meta name="twitter:creator" content="@your-user-name" />
+  <script defer src="https://haruband.github.io/js/abridge.min.js?h=e0f9a881a665c86cce9c" integrity="sha384-QF67y7RnPkuDrJNQqn3/7nYxqxWkW/qHI7zN0WTES1aXbf+TotoByRBb835fUE6U"></script>
+  <noscript><link rel="stylesheet" href="https://haruband.github.io/nojs.css" /></noscript>
+</head>
+<body>
+  <header>
+    <nav>
+      <div><big><a href="https://haruband.github.io" title="CodeBook">CodeBook</a></big></div>
+      <div>
+
+        <div>
+          <ul><li><a class="s110" href="https://haruband.github.io/archive/"> Posts </a></li><li><a class="s110" href="https://haruband.github.io/tags/"> Tags </a></li><li><i type="reset" id="mode" class="js svgs adjust"></i></ul>
+        </div>
+
+        <div>
+          <div>
+            <form autocomplete=off class="js" name="goSearch" id="searchbox">
+              <div class="searchd">
+                <input id="searchinput" type="text" placeholder="Search" title="Search" />
+                <button type="submit" title="Search" class="svgs svgm search"></button>
+              </div>
+              <div class="results"><div id="suggestions"></div></div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </nav>
+  </header>
+  <main>
+    <article>
+      <h1><a href="https://haruband.github.io/k8s-cgroupv2-privatens/">[K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석</a></h1>
+
+      <span class="s95"> Inhyeok Kim <span class="rpad"></span> April 09, 2021 <span class="rpad"></span>Updated: April 09, 2021 <span class="rpad"></span> #<a href="https://haruband.github.io/tags/k8s/">K8S</a>  #<a href="https://haruband.github.io/tags/kubernetes/">Kubernetes</a>  #<a href="https://haruband.github.io/tags/cilium/">Cilium</a>  #<a href="https://haruband.github.io/tags/cgroup/">CGroup</a> </span>
+
+    
+        <div class="block">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/k8s/">K8S (Series)</a><br>
+            <a href="https://haruband.github.io/k8s-cni-vxlan/">[K8S&#x2F;Cilium] VXLAN 기반 Tunneling Datapath 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-ipvlan/">[K8S&#x2F;Cilium] IPVLAN 기반 Routing Datapath 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-service/">[K8S&#x2F;Cilium] ClusterIP 서비스</a><br>
+            <a href="https://haruband.github.io/k8s-cni-nodeport/">[K8S&#x2F;Cilium] NodePort 서비스</a><br>
+            <a href="https://haruband.github.io/k8s-cni-dsr/">[K8S&#x2F;Cilium] DSR (Direct Server Return)</a><br>
+            <a href="https://haruband.github.io/k8s-cni-redirect/">[K8S&#x2F;Cilium] bpf_redirect_peer()&#x2F;bpf_redirect_neigh()</a><br>
+            <a href="https://haruband.github.io/k8s-cni-routing-benchmark/">[K8S&#x2F;Cilium] 라우팅 기법 성능 평가</a><br>
+            <a href="https://haruband.github.io/k8s-cni-ipvlan-redirect-bug/">[K8S&#x2F;Cilium] IPVLAN 기반 Cilium 의 NodePort 버그 분석</a><br>
+            <a href="https://haruband.github.io/k8s-cni-loadbalancing/">[K8S&#x2F;Cilium] Socket-Based LoadBalancing 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-servicemesh-proxy/">[K8S&#x2F;Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy)</a><br>
+            <a href="https://haruband.github.io/k8s-vxlan-forbidden/">[K8S] VXLAN 사용 불가 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-nat-loopback-snat/">[K8S] NAT 루프백 문제 분석 (SNAT)</a><br>
+            <a href="https://haruband.github.io/k8s-kafka-optimize-loadbalancer/">[K8S] 네트워크 최적화 (MetalLB)</a><br>
+            <a href="https://haruband.github.io/k8s-proxy-bypass/">[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-memory-swap/">[K8S] 메모리 스와핑 지원 분석</a><br>
+            <a href="https://haruband.github.io/k8s-nat-loopback-lrp/">[K8S] NAT 루프백 문제 분석 (LRP)</a><br>
+            <a class="scur" href="https://haruband.github.io/k8s-cgroupv2-privatens/">[K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석</a><br> 
+          
+            <a href="https://haruband.github.io/k8s-rpfilter/">[K8S] Cilium RPFilter 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-qos-memory/">[K8S] 메모리 QoS 지원 분석</a><br>
+            <a href="https://haruband.github.io/k8s-networkpolicy/">[K8S] Cilium NetworkPolicy 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-spark-optimize/">[K8S&#x2F;Spark] 성능 최적화</a><br>
+            <a href="https://haruband.github.io/k8s-spark-optimize-swap/">[K8S&#x2F;Spark] 메모리 최적화 (Swap)</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh/">[K8S&#x2F;Istio] AmbientMesh 소개</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh-flow/">[K8S&#x2F;Istio] AmbientMesh 동작 과정 분석</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh-rpfilter/">[K8S&#x2F;Istio] AmbientMesh RPFilter 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh-cilium/">[K8S&#x2F;Istio] AmbientMesh Cilium 문제 분석</a><br>
+      </div>
+    </div>
+
+
+<p>최근 공개된 우분투 21.10 은 컨테이너와 관련된 상당히 큰 부분이 변경되었다. <strong>마침내 CGroupV2 가 적용되었고, 도커도 업그레이드되면서 CGroup 네임스페이스의 기본값이 Private 으로 설정되었다.</strong> 오늘은 이로 인해 발생한 문제에 대해 자세히 살펴보도록 하자.</p>
+<h2 id="eoddeohan-munjega-balsaenghaessneunga">어떠한 문제가 발생했는가???</h2>
+<p>개발 서버에 우분투 21.10 을 설치한 후, 늘 쓰던대로 쿠버네티스와 Cilium 을 설치하였는데 갑자기 서비스가 정상동작하지 않는 문제가 발생하였다. 몇 가지를 확인해 본 후, 파드 네임스페이스와 호스트 네임스페이스 모두에서 파드의 ClusterIP 로는 통신이 되는데, 서비스의 ClusterIP 로는 통신이 되지 않는 현상을 발견하였다. 그래서 tcpdump 로 패킷을 확인해보니 서비스의 ClusterIP 가 소켓 기반 로드밸런싱을 통해 파드의 ClusterIP 로 변경되지 않고 그대로 남아있었다. 즉, 소켓 기반 로드밸런싱이 제대로 작동하지 않는 문제였다.</p>
+<h2 id="eoddeohge-munjega-balsaenghaessneunga">어떻게 문제가 발생했는가???</h2>
+<p>문제의 원인은 비교적 쉽게 파악하였는데, 아래 쿠버네티스 노드의 모든 CGROUP 에 연결된 BPF 프로그램 목록을 살펴보자.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">$</span></span><span class="z-meta z-function-call z-arguments z-shell"> bpftool cgroup tree</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">CgroupPath</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">ID</span></span><span class="z-meta z-function-call z-arguments z-shell">       AttachType      AttachFlags     Name</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">/sys/fs/cgroup/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-podf8371831_8021_4722_af27_93c925d25a14.slice/docker-5cecdc399e2fa339d62a5b276331d8a5875fff7898a09d1ba1f5d710ecb12f13.scope</span></span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">62</span></span><span class="z-meta z-function-call z-arguments z-shell">       device          multi</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">/sys/fs/cgroup/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-podf8371831_8021_4722_af27_93c925d25a14.slice/docker-fbbef81081fd1fdf7653041c79cf8969be138b5bbd57db50de28cba35fd65910.scope</span></span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">68</span></span><span class="z-meta z-function-call z-arguments z-shell">       device          multi</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">728</span></span><span class="z-meta z-function-call z-arguments z-shell">      connect4</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">723</span></span><span class="z-meta z-function-call z-arguments z-shell">      connect6</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">730</span></span><span class="z-meta z-function-call z-arguments z-shell">      post_bind4</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">725</span></span><span class="z-meta z-function-call z-arguments z-shell">      post_bind6</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">731</span></span><span class="z-meta z-function-call z-arguments z-shell">      sendmsg4</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">726</span></span><span class="z-meta z-function-call z-arguments z-shell">      sendmsg6</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">732</span></span><span class="z-meta z-function-call z-arguments z-shell">      recvmsg4</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">727</span></span><span class="z-meta z-function-call z-arguments z-shell">      recvmsg6</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">729</span></span><span class="z-meta z-function-call z-arguments z-shell">      getpeername4</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">724</span></span><span class="z-meta z-function-call z-arguments z-shell">      getpeername6</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span></code></pre>
+<p>소켓 기반 로드밸런싱에 사용되는 BPF 프로그램이 루트 CGROUP 이 아닌 특정 컨테이너의 하위 CGROUP 에 연결되어 있었다. 그리고 아래 출력을 보면 알 수 있듯이, 해당 컨테이너는 다름 아닌 Cilium 에이전트 컨테이너였다. 이는 심각한 문제를 발생시키는데, 이유는 <strong>소켓 시스템콜은 자신이 속한 CGROUP 만이 아니라 루트 CGROUP 까지 모든 부모 CGROUP 에 연결된 BPF 프로그램을 실행하므로 Cilium 에이전트는 간단히 루트 CGROUP 에만 필요한 BPF 프로그램을 연결하여 소켓 기반 로드밸런싱을 처리하기 때문이다.</strong></p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">$</span></span><span class="z-meta z-function-call z-arguments z-shell"> kubectl get pods cilium-mldd6<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> -</span>n</span> kube-system<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> -</span>o</span> yaml</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">apiVersion:</span></span><span class="z-meta z-function-call z-arguments z-shell"> v1</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">kind:</span></span><span class="z-meta z-function-call z-arguments z-shell"> Pod</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">metadata:</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">status:</span></span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">containerStatuses:</span></span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">-</span></span><span class="z-meta z-function-call z-arguments z-shell"> containerID: docker://fbbef81081fd1fdf7653041c79cf8969be138b5bbd57db50de28cba35fd65910</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">name:</span></span><span class="z-meta z-function-call z-arguments z-shell"> cilium-agent</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span></code></pre>
+<p>이와 같은 문제가 발생한 이유는, <strong>소켓 기반 로드밸런싱에 사용되는 BPF 프로그램은 Cilium 에이전트에서 CGroupV2 파일시스템을 /run/cilium/cgroupv2 디렉토리에 마운트한 후 루트 CGROUP 인 최상위 디렉토리에 연결하는데, 우분투 21.10 에서는 도커의 CGroup 네임스페이스의 기본값이 Private 으로 변경되어 최상위 디렉토리가 루트 CGROUP 이 아닌 해당 컨테이너의 CGROUP 이 되었기 때문이다.</strong></p>
+<h2 id="eoddeohge-munjereul-haegyeolhaessneunga">어떻게 문제를 해결했는가???</h2>
+<p>가장 간단한 해결책은 도커의 CGroup 네임스페이스의 기본값을 Host 로 변경해버리는 것이겠지만, 이보다는 Cilium 에서 추천하는 해결책을 소개하도록 하겠다. 이는 현재 Cilium 의 Helm 차트에 적용되어 있는 방법이다.</p>
+<pre class="z-code"><code><span class="z-text z-plain">apiVersion: apps/v1
+</span><span class="z-text z-plain">kind: DaemonSet
+</span><span class="z-text z-plain">metadata:
+</span><span class="z-text z-plain">  name: cilium
+</span><span class="z-text z-plain">  namespace: {{ .Release.Namespace }}
+</span><span class="z-text z-plain">spec:
+</span><span class="z-text z-plain">  template:
+</span><span class="z-text z-plain">    spec:
+</span><span class="z-text z-plain">      initContainers:
+</span><span class="z-text z-plain">      - name: mount-cgroup
+</span><span class="z-text z-plain">        image: {{ include &quot;cilium.image&quot; .Values.image | quote }}
+</span><span class="z-text z-plain">        imagePullPolicy: {{ .Values.image.pullPolicy }}
+</span><span class="z-text z-plain">        env:
+</span><span class="z-text z-plain">        - name: CGROUP_ROOT
+</span><span class="z-text z-plain">          value: {{ .Values.cgroup.hostRoot }}
+</span><span class="z-text z-plain">        - name: BIN_PATH
+</span><span class="z-text z-plain">          value: {{ .Values.cni.binPath }}
+</span><span class="z-text z-plain">        command:
+</span><span class="z-text z-plain">        - sh
+</span><span class="z-text z-plain">        - -ec
+</span><span class="z-text z-plain">        - |
+</span><span class="z-text z-plain">          cp /usr/bin/cilium-mount /hostbin/cilium-mount;
+</span><span class="z-text z-plain">          nsenter --cgroup=/hostproc/1/ns/cgroup --mount=/hostproc/1/ns/mnt &quot;${BIN_PATH}/cilium-mount&quot; $CGROUP_ROOT;
+</span><span class="z-text z-plain">          rm /hostbin/cilium-mount
+</span><span class="z-text z-plain">        volumeMounts:
+</span><span class="z-text z-plain">        - name: hostproc
+</span><span class="z-text z-plain">          mountPath: /hostproc
+</span><span class="z-text z-plain">        - name: cni-path
+</span><span class="z-text z-plain">          mountPath: /hostbin
+</span><span class="z-text z-plain">        securityContext:
+</span><span class="z-text z-plain">          privileged: true
+</span><span class="z-text z-plain">      volumes:
+</span><span class="z-text z-plain">      - name: hostproc
+</span><span class="z-text z-plain">        hostPath:
+</span><span class="z-text z-plain">          path: /proc
+</span><span class="z-text z-plain">          type: Directory
+</span></code></pre>
+<p>위는 Helm 차트에 적용되어 있는 Cilium 에이전트의 데몬셋의 일부이다. 언급된 문제를 해결하기 위해 mount-cgroup 이라는 initContainer 가 추가되어 있으며, 이는 nsenter 를 이용하여 호스트 네임스페이스의 1번 프로세스의 CGroup 과 Mount 네임스페이스로 변경 후 /run/cilium/cgroupv2 디렉토리에 CGroupV2 파일시스템을 마운트한다. 즉, 호스트 파일시스템의 /run/cilium/cgroupv2 디렉토리에 최상위 네임스페이스의 CGroupV2 파일시스템이 마운트된 것이다. 그리고 Cilium 에이전트 컨테이너에서는 hostPath 를 이용하여 호스트 파일시스템의 /run/cilium/cgroupv2 디렉토리를 그대로 사용하면 해당 문제는 완벽히 해결된다.</p>
+<p>앞에서 언급한 해결책을 적용한 다음 쿠버네티스 노드의 모든 CGROUP 에 연결된 BPF 프로그램 목록을 살펴보자.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">$</span></span><span class="z-meta z-function-call z-arguments z-shell"> bpftool cgroup tree</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">CgroupPath</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">ID</span></span><span class="z-meta z-function-call z-arguments z-shell">       AttachType      AttachFlags     Name</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">/sys/fs/cgroup</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">1506</span></span><span class="z-meta z-function-call z-arguments z-shell">     connect4</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">1501</span></span><span class="z-meta z-function-call z-arguments z-shell">     connect6</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">1508</span></span><span class="z-meta z-function-call z-arguments z-shell">     post_bind4</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">1503</span></span><span class="z-meta z-function-call z-arguments z-shell">     post_bind6</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">1509</span></span><span class="z-meta z-function-call z-arguments z-shell">     sendmsg4</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">1504</span></span><span class="z-meta z-function-call z-arguments z-shell">     sendmsg6</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">1510</span></span><span class="z-meta z-function-call z-arguments z-shell">     recvmsg4</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">1505</span></span><span class="z-meta z-function-call z-arguments z-shell">     recvmsg6</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">1507</span></span><span class="z-meta z-function-call z-arguments z-shell">     getpeername4</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">1502</span></span><span class="z-meta z-function-call z-arguments z-shell">     getpeername6</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">/sys/fs/cgroup/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-podf8371831_8021_4722_af27_93c925d25a14.slice/docker-5cecdc399e2fa339d62a5b276331d8a5875fff7898a09d1ba1f5d710ecb12f13.scope</span></span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">62</span></span><span class="z-meta z-function-call z-arguments z-shell">       device          multi</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">/sys/fs/cgroup/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-podf8371831_8021_4722_af27_93c925d25a14.slice/docker-fbbef81081fd1fdf7653041c79cf8969be138b5bbd57db50de28cba35fd65910.scope</span></span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">68</span></span><span class="z-meta z-function-call z-arguments z-shell">       device          multi</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span></code></pre>
+<p>위에서 보는 것처럼, 루트 CGROUP 에 소켓 기반 로드밸런싱에서 필요로 하는 모든 BPF 프로그램이 연결되어 있는 것을 볼 수 있다.</p>
+
+      <nav>
+        <div>
+          <a href="https://haruband.github.io/k8s-rpfilter/">&#8249; [K8S] Cilium RPFilter 문제 분석</a>
+        </div>
+        <div>
+          <a href="https://haruband.github.io/k8s-nat-loopback-lrp/"> [K8S] NAT 루프백 문제 분석 (LRP) &#8250;</a>
+        </div>
+      </nav>
+    </article>
+
+    <div class="sblock">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/k8s/">Series</a><br>
+
+          
+          
+      <a href="https://haruband.github.io/k8s-cni-vxlan/">[K8S&#x2F;Cilium] VXLAN 기반 Tunneling Datapath 기법</a><br>
+
+          
+            <details>
+              <summary>More...</summary>
+            </details>
+            <div class="hidden_li">
+                <a href="https://haruband.github.io/k8s-cni-ipvlan/">[K8S&#x2F;Cilium] IPVLAN 기반 Routing Datapath 기법</a><br>
+                <a href="https://haruband.github.io/k8s-cni-service/">[K8S&#x2F;Cilium] ClusterIP 서비스</a><br>
+                <a href="https://haruband.github.io/k8s-cni-nodeport/">[K8S&#x2F;Cilium] NodePort 서비스</a><br>
+                <a href="https://haruband.github.io/k8s-cni-dsr/">[K8S&#x2F;Cilium] DSR (Direct Server Return)</a><br>
+                <a href="https://haruband.github.io/k8s-cni-redirect/">[K8S&#x2F;Cilium] bpf_redirect_peer()&#x2F;bpf_redirect_neigh()</a><br>
+                <a href="https://haruband.github.io/k8s-cni-routing-benchmark/">[K8S&#x2F;Cilium] 라우팅 기법 성능 평가</a><br>
+                <a href="https://haruband.github.io/k8s-cni-ipvlan-redirect-bug/">[K8S&#x2F;Cilium] IPVLAN 기반 Cilium 의 NodePort 버그 분석</a><br>
+                <a href="https://haruband.github.io/k8s-cni-loadbalancing/">[K8S&#x2F;Cilium] Socket-Based LoadBalancing 기법</a><br>
+                <a href="https://haruband.github.io/k8s-cni-servicemesh-proxy/">[K8S&#x2F;Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy)</a><br>
+                <a href="https://haruband.github.io/k8s-vxlan-forbidden/">[K8S] VXLAN 사용 불가 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-nat-loopback-snat/">[K8S] NAT 루프백 문제 분석 (SNAT)</a><br>
+                <a href="https://haruband.github.io/k8s-kafka-optimize-loadbalancer/">[K8S] 네트워크 최적화 (MetalLB)</a><br>
+                <a href="https://haruband.github.io/k8s-proxy-bypass/">[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석</a><br>
+            </div>
+
+          
+
+          
+            <a href="https://haruband.github.io/k8s-memory-swap/">[K8S] 메모리 스와핑 지원 분석</a><br>
+            <a href="https://haruband.github.io/k8s-nat-loopback-lrp/">[K8S] NAT 루프백 문제 분석 (LRP)</a><br>
+
+          
+            
+      <a class="scur" href="https://haruband.github.io/k8s-cgroupv2-privatens/">[K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석</a><br>
+    
+
+          
+            <a href="https://haruband.github.io/k8s-rpfilter/">[K8S] Cilium RPFilter 문제 분석</a><br>
+          
+            <a href="https://haruband.github.io/k8s-qos-memory/">[K8S] 메모리 QoS 지원 분석</a><br>
+          
+            <details>
+              <summary>More...</summary>
+            </details>
+            <div class="hidden_li">
+                <a href="https://haruband.github.io/k8s-networkpolicy/">[K8S] Cilium NetworkPolicy 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-spark-optimize/">[K8S&#x2F;Spark] 성능 최적화</a><br>
+                <a href="https://haruband.github.io/k8s-spark-optimize-swap/">[K8S&#x2F;Spark] 메모리 최적화 (Swap)</a><br>
+                <a href="https://haruband.github.io/k8s-istio-ambientmesh/">[K8S&#x2F;Istio] AmbientMesh 소개</a><br>
+                <a href="https://haruband.github.io/k8s-istio-ambientmesh-flow/">[K8S&#x2F;Istio] AmbientMesh 동작 과정 분석</a><br>
+                <a href="https://haruband.github.io/k8s-istio-ambientmesh-rpfilter/">[K8S&#x2F;Istio] AmbientMesh RPFilter 문제 분석</a><br>
+            </div>
+        
+      <a href="https://haruband.github.io/k8s-istio-ambientmesh-cilium/">[K8S&#x2F;Istio] AmbientMesh Cilium 문제 분석</a><br>
+
+        
+      </div>
+      <div class="blockdiv sticky">
+        <a class="b s150" href="#">Index</a>
+        <div>
+          <a href="#eoddeohan-munjega-balsaenghaessneunga">어떠한 문제가 발생했는가???</a>
+        </div>
+        <div>
+          <a href="#eoddeohge-munjega-balsaenghaessneunga">어떻게 문제가 발생했는가???</a>
+        </div>
+        <div>
+          <a href="#eoddeohge-munjereul-haegyeolhaessneunga">어떻게 문제를 해결했는가???</a>
+        </div>
+      </div>
+    </div>
+  </main>
+  <footer>
+    <div class="c">
+      <nav class="tpad"><div><a href="https://www.linkedin.com/in/inhyeok-kim-7620a0b0/" target="_blank" title="LinkedIn"><i type="Button" class="svg linkedin" title="LinkedIn"></i></a><a href="https://github.com/haruband/" target="_blank" title="Github"><i type="Button" class="svg github" title="Github"></i></a></div></nav>
+      <nav class="vpad">
+        <a class="rpad s90" href="https://haruband.github.io/about/"> About </a>
+        <a class="rpad s90" href="https://haruband.github.io/contact/"> Contact </a>
+      </nav>
+      <p class="s80"> &copy; <span id="year">2025</span> CodeBook</p>
+      <p class="s80">Powered by <a href="https://www.getzola.org/" target="_blank">Zola</a> & <a href="https://github.com/jieiku/abridge/" target="_blank">Abridge</a></p>
+    </div>
+  </footer>
+</body>
+</html>

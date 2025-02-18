@@ -1,0 +1,203 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://haruband.github.io/js/theme.min.js" integrity="sha384-pb++s6uBRKaQv+iAXpgA/H3IlpLZdO14tTwuCI7uXmz4aaZdByoCcM+6BhynMq/1"></script>
+  <link rel="stylesheet" href="https://haruband.github.io/abridge.css?h=98ebdf6fd3d59dfb2edf" />
+  <meta charset="utf-8" />
+  <meta http-equiv="x-ua-compatible" content="ie=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="base" content="https://haruband.github.io" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#333333" />
+  <meta name="msapplication-TileColor" content="#333333" />
+  <link rel="manifest" href="https://haruband.github.io/manifest.min.json" />
+  <link rel="mask-icon" href="https://haruband.github.io/safari-pinned-tab.svg" color="#ff9900" />
+  <link rel="icon" type="image/svg+xml" href="https://haruband.github.io/favicon.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="https://haruband.github.io/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="https://haruband.github.io/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="https://haruband.github.io/favicon-16x16.png" />
+  <link rel="alternate" type="application/atom+xml" title="CodeBook Atom Feed" href="https://haruband.github.io/atom.xml" />
+  <meta name="robots" content="index, follow" />
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <title>[K8S/Cilium] NodePort 서비스 | CodeBook</title>
+  <meta name="author" content="Inhyeok Kim" />
+  <meta name="copyright" content="CodeBook" />
+  <meta name="description" content="Haruband&#x27;s TechBlog" />
+  <link rel="canonical" href="https://haruband.github.io/k8s-cni-nodeport/" />
+  <meta name="keywords" content="Arrow, Datafusion, Kubernetes" />
+  <meta name="google-site-verification" content="Your Google Site verification code." />
+  <meta name="msvalidate.01" content="Your Bing Site verification code." />
+  <meta property="og:url" content="https://haruband.github.io/k8s-cni-nodeport/" />
+  <meta name="twitter:url" content="https://haruband.github.io/k8s-cni-nodeport/" />
+  <meta property="og:description" content="Haruband&#x27;s TechBlog" />
+  <meta name="twitter:description" content="Haruband&#x27;s TechBlog" />
+  <meta property="og:title" content="[K8S&#x2F;Cilium] NodePort 서비스 | CodeBook" />
+  <meta name="twitter:title" content="[K8S&#x2F;Cilium] NodePort 서비스 | CodeBook" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:site_name" content="CodeBook" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:type" content="website" />
+  <meta property="og:updated_time" content="2020-10-03" />
+  <meta name="twitter:site" content="@your-user-name" />
+  <meta name="twitter:creator" content="@your-user-name" />
+  <script defer src="https://haruband.github.io/js/abridge.min.js?h=e0f9a881a665c86cce9c" integrity="sha384-QF67y7RnPkuDrJNQqn3/7nYxqxWkW/qHI7zN0WTES1aXbf+TotoByRBb835fUE6U"></script>
+  <noscript><link rel="stylesheet" href="https://haruband.github.io/nojs.css" /></noscript>
+</head>
+<body>
+  <header>
+    <nav>
+      <div><big><a href="https://haruband.github.io" title="CodeBook">CodeBook</a></big></div>
+      <div>
+
+        <div>
+          <ul><li><a class="s110" href="https://haruband.github.io/archive/"> Posts </a></li><li><a class="s110" href="https://haruband.github.io/tags/"> Tags </a></li><li><i type="reset" id="mode" class="js svgs adjust"></i></ul>
+        </div>
+
+        <div>
+          <div>
+            <form autocomplete=off class="js" name="goSearch" id="searchbox">
+              <div class="searchd">
+                <input id="searchinput" type="text" placeholder="Search" title="Search" />
+                <button type="submit" title="Search" class="svgs svgm search"></button>
+              </div>
+              <div class="results"><div id="suggestions"></div></div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </nav>
+  </header>
+  <main>
+    <article>
+      <h1><a href="https://haruband.github.io/k8s-cni-nodeport/">[K8S&#x2F;Cilium] NodePort 서비스</a></h1>
+
+      <span class="s95"> Inhyeok Kim <span class="rpad"></span> October 03, 2020 <span class="rpad"></span>Updated: October 03, 2020 <span class="rpad"></span> #<a href="https://haruband.github.io/tags/k8s/">K8S</a>  #<a href="https://haruband.github.io/tags/kubernetes/">Kubernetes</a>  #<a href="https://haruband.github.io/tags/cilium/">Cilium</a> </span>
+
+    
+        <div class="block">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/cilium/">Cilium (Series)</a><br>
+            <a href="https://haruband.github.io/k8s-cni-vxlan/">[K8S&#x2F;Cilium] VXLAN 기반 Tunneling Datapath 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-ipvlan/">[K8S&#x2F;Cilium] IPVLAN 기반 Routing Datapath 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-service/">[K8S&#x2F;Cilium] ClusterIP 서비스</a><br>
+            <a class="scur" href="https://haruband.github.io/k8s-cni-nodeport/">[K8S&#x2F;Cilium] NodePort 서비스</a><br> 
+          
+            <a href="https://haruband.github.io/k8s-cni-dsr/">[K8S&#x2F;Cilium] DSR (Direct Server Return)</a><br>
+            <a href="https://haruband.github.io/k8s-cni-redirect/">[K8S&#x2F;Cilium] bpf_redirect_peer()&#x2F;bpf_redirect_neigh()</a><br>
+            <a href="https://haruband.github.io/k8s-cni-routing-benchmark/">[K8S&#x2F;Cilium] 라우팅 기법 성능 평가</a><br>
+            <a href="https://haruband.github.io/k8s-cni-ipvlan-redirect-bug/">[K8S&#x2F;Cilium] IPVLAN 기반 Cilium 의 NodePort 버그 분석</a><br>
+            <a href="https://haruband.github.io/k8s-cni-loadbalancing/">[K8S&#x2F;Cilium] Socket-Based LoadBalancing 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-servicemesh-proxy/">[K8S&#x2F;Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy)</a><br>
+            <a href="https://haruband.github.io/k8s-vxlan-forbidden/">[K8S] VXLAN 사용 불가 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-kafka-optimize-loadbalancer/">[K8S] 네트워크 최적화 (MetalLB)</a><br>
+            <a href="https://haruband.github.io/k8s-proxy-bypass/">[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-cgroupv2-privatens/">[K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-rpfilter/">[K8S] Cilium RPFilter 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-networkpolicy/">[K8S] Cilium NetworkPolicy 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh-cilium/">[K8S&#x2F;Istio] AmbientMesh Cilium 문제 분석</a><br>
+      </div>
+    </div>
+
+
+<p>외부에서 쿠버네티스 서비스에 접근하는 대표적인 방법 중의 하나는 NodePort 서비스를 이용하는 것이다. NodePort 서비스를 생성하면 30000~32767 사이의 임의의 값이 포트 번호로 할당되고, 선택된 파드가 어디에있든 상관없이 모든 노드에서 해당 포트 번호로 접근이 가능해진다.</p>
+<p>설명을 위해 아래와 같이 리소스를 준비해두었다.</p>
+<pre class="z-code"><code><span class="z-text z-plain">$ kubectl get pods -o wide
+</span><span class="z-text z-plain">NAME    READY   STATUS    RESTARTS   AGE     IP           NODE     NOMINATED NODE   READINESS GATES
+</span><span class="z-text z-plain">nginx   1/1     Running   0          6h15m   10.0.1.72    node1    &lt;none&gt;           &lt;none&gt;
+</span><span class="z-text z-plain">
+</span><span class="z-text z-plain">$ kubectl get services
+</span><span class="z-text z-plain">NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
+</span><span class="z-text z-plain">nginx        NodePort    10.106.91.98   &lt;none&gt;        80:30645/TCP     6h49m
+</span><span class="z-text z-plain">
+</span><span class="z-text z-plain">node0 $ cilium service list
+</span><span class="z-text z-plain">ID   Frontend              Service Type   Backend
+</span><span class="z-text z-plain">4    10.106.91.98:80       ClusterIP      1 =&gt; 10.0.1.72:80
+</span><span class="z-text z-plain">5    172.26.50.101:30645   NodePort       1 =&gt; 10.0.1.72:80
+</span></code></pre>
+<p>웹서버 역할을 하는 파드(nginx)는 Node1 에 위치하고, Node0 에서 Cilium 의 서비스 목록을 출력해보면, 위처럼 ClusterIP 프론트엔드와 NodePort 프론트엔드가 하나씩 보인다. (Node1 에서 Cilium 의 서비스 목록을 출력해봐도 동일하게 30645 포트를 사용하는 NodePort 프론트엔드가 보일 것이다.)</p>
+<p>그럼 이제 Client-To-NodePort 통신이 이루어지는 과정을 살펴보자. 클라이언트가 파드(nginx)가 위치한 노드(Node1)로 바로 접속하는 경우는 간단하기 때문에, 파드(nginx)가 위치한 노드와 다른 노드(Node0)로 접속하는 경우에 대해서 살펴보도록 하자.</p>
+<p><img src="https://haruband.github.io/k8s-cni-nodeport/./cilium-nodeport.png" alt="cilium.nodeport" /></p>
+<p>기본 동작 방식은 SNAT 기법을 이용하는 것이다. 즉, 출발지 주소(172.26.50.180:10000)를 클라이언트가 접속한 Node0 의 주소(172.26.50.101:31210)로 변환한 후, 해당 패킷을 Node1 로 전달한다. 이때 출발지 주소(172.26.50.101:31210)와 목적지 주소(10.0.1.72:80)를 매핑테이블에 저장해놓고, 출발지 주소(10.0.1.72:80)와 목적지 주소(172.26.50.101:31210)를 가지는 응답 패킷이 들어오면 앞에서 매핑테이블에 저장해놓은 정보를 이용해서 목적지 주소를 클라이언트 주소(172.26.50.180:10000)로 변환한 다음, 해당 패킷을 클라이언트로 전달한다.</p>
+<p>그럼 이제 패킷이 전달되는 과정을 좀 더 상세히 살펴보도록 하자.</p>
+<p>클라이언트에서 Node0 으로 전송된 패킷은 물리 네트워크 장치의 ingress BPF 프로그램(cilium/bpf/bpf_host.c#from-netdev)에 의해 먼저 목적지 주소(172.26.50.101:30645)를 백엔드 주소(10.0.1.72:80)로 변환한 다음, conntrack 맵에 변환정보를 저장해놓는다. 그리고 백엔드 주소가 동일한 노드에 있으면 패킷을 바로 전달하고, 다른 노드이면 출발지 주소(172.26.50.180:10000)를 Node0 의 주소(172.26.50.101:31210)로 변환한 다음, cilium_snat_v4_external 맵에 변환정보를 저장해놓는다. 결과적으로 위 그림의 2번과 같은 형태로 패킷이 전달된다.</p>
+<p>Node1 의 Pod3 에서 해당 패킷을 처리한 다음, 위 그림의 3번과 같은 형태로 응답 패킷을 전송하는데, 이를 수신한 Node0 은 물리 네트워크 장치의 ingress BPF 프로그램(cilium/bpf/bpf_host.c#from-netdev)에서 우선 cilium_snat_v4_external 맵에 저장된 정보를 이용하여 목적지 주소(172.26.50.101:31210)를 클라이언트 주소(172.26.50.180:10000)으로 변환하고, 이어서 conntrack 맵에 저장된 정보를 이용하여 출발지 주소(10.0.1.72:80)를 Node0 의 주소(172.26.50.101:30645)로 변환한다. 이러한 과정을 거쳐 클라이언트는 패킷을 보낸 주소 그대로 패킷을 받게 되는 것이다.</p>
+<p>여기까지 Cilium 에서 Client-To-NodePort 통신이 이루어지는 과정을 살펴보았다.</p>
+
+      <nav>
+        <div>
+          <a href="https://haruband.github.io/k8s-cni-dsr/">&#8249; [K8S&#x2F;Cilium] DSR (Direct Server Return)</a>
+        </div>
+        <div>
+          <a href="https://haruband.github.io/k8s-cni-service/"> [K8S&#x2F;Cilium] ClusterIP 서비스 &#8250;</a>
+        </div>
+      </nav>
+    </article>
+
+    <div class="sblock">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/cilium/">Series</a><br>
+
+          
+          
+      <a href="https://haruband.github.io/k8s-cni-vxlan/">[K8S&#x2F;Cilium] VXLAN 기반 Tunneling Datapath 기법</a><br>
+
+          
+
+          
+
+          
+            <a href="https://haruband.github.io/k8s-cni-ipvlan/">[K8S&#x2F;Cilium] IPVLAN 기반 Routing Datapath 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-service/">[K8S&#x2F;Cilium] ClusterIP 서비스</a><br>
+
+          
+            
+      <a class="scur" href="https://haruband.github.io/k8s-cni-nodeport/">[K8S&#x2F;Cilium] NodePort 서비스</a><br>
+    
+
+          
+            <a href="https://haruband.github.io/k8s-cni-dsr/">[K8S&#x2F;Cilium] DSR (Direct Server Return)</a><br>
+          
+            <a href="https://haruband.github.io/k8s-cni-redirect/">[K8S&#x2F;Cilium] bpf_redirect_peer()&#x2F;bpf_redirect_neigh()</a><br>
+          
+            <details>
+              <summary>More...</summary>
+            </details>
+            <div class="hidden_li">
+                <a href="https://haruband.github.io/k8s-cni-routing-benchmark/">[K8S&#x2F;Cilium] 라우팅 기법 성능 평가</a><br>
+                <a href="https://haruband.github.io/k8s-cni-ipvlan-redirect-bug/">[K8S&#x2F;Cilium] IPVLAN 기반 Cilium 의 NodePort 버그 분석</a><br>
+                <a href="https://haruband.github.io/k8s-cni-loadbalancing/">[K8S&#x2F;Cilium] Socket-Based LoadBalancing 기법</a><br>
+                <a href="https://haruband.github.io/k8s-cni-servicemesh-proxy/">[K8S&#x2F;Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy)</a><br>
+                <a href="https://haruband.github.io/k8s-vxlan-forbidden/">[K8S] VXLAN 사용 불가 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-kafka-optimize-loadbalancer/">[K8S] 네트워크 최적화 (MetalLB)</a><br>
+                <a href="https://haruband.github.io/k8s-proxy-bypass/">[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-cgroupv2-privatens/">[K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-rpfilter/">[K8S] Cilium RPFilter 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-networkpolicy/">[K8S] Cilium NetworkPolicy 문제 분석</a><br>
+            </div>
+        
+      <a href="https://haruband.github.io/k8s-istio-ambientmesh-cilium/">[K8S&#x2F;Istio] AmbientMesh Cilium 문제 분석</a><br>
+
+        
+      </div>
+  </main>
+  <footer>
+    <div class="c">
+      <nav class="tpad"><div><a href="https://www.linkedin.com/in/inhyeok-kim-7620a0b0/" target="_blank" title="LinkedIn"><i type="Button" class="svg linkedin" title="LinkedIn"></i></a><a href="https://github.com/haruband/" target="_blank" title="Github"><i type="Button" class="svg github" title="Github"></i></a></div></nav>
+      <nav class="vpad">
+        <a class="rpad s90" href="https://haruband.github.io/about/"> About </a>
+        <a class="rpad s90" href="https://haruband.github.io/contact/"> Contact </a>
+      </nav>
+      <p class="s80"> &copy; <span id="year">2025</span> CodeBook</p>
+      <p class="s80">Powered by <a href="https://www.getzola.org/" target="_blank">Zola</a> & <a href="https://github.com/jieiku/abridge/" target="_blank">Abridge</a></p>
+    </div>
+  </footer>
+</body>
+</html>

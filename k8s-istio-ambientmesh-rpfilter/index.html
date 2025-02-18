@@ -1,0 +1,209 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://haruband.github.io/js/theme.min.js" integrity="sha384-pb++s6uBRKaQv+iAXpgA/H3IlpLZdO14tTwuCI7uXmz4aaZdByoCcM+6BhynMq/1"></script>
+  <link rel="stylesheet" href="https://haruband.github.io/abridge.css?h=98ebdf6fd3d59dfb2edf" />
+  <meta charset="utf-8" />
+  <meta http-equiv="x-ua-compatible" content="ie=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="base" content="https://haruband.github.io" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#333333" />
+  <meta name="msapplication-TileColor" content="#333333" />
+  <link rel="manifest" href="https://haruband.github.io/manifest.min.json" />
+  <link rel="mask-icon" href="https://haruband.github.io/safari-pinned-tab.svg" color="#ff9900" />
+  <link rel="icon" type="image/svg+xml" href="https://haruband.github.io/favicon.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="https://haruband.github.io/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="https://haruband.github.io/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="https://haruband.github.io/favicon-16x16.png" />
+  <link rel="alternate" type="application/atom+xml" title="CodeBook Atom Feed" href="https://haruband.github.io/atom.xml" />
+  <meta name="robots" content="index, follow" />
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <title>[K8S/Istio] AmbientMesh RPFilter 문제 분석 | CodeBook</title>
+  <meta name="author" content="Inhyeok Kim" />
+  <meta name="copyright" content="CodeBook" />
+  <meta name="description" content="Haruband&#x27;s TechBlog" />
+  <link rel="canonical" href="https://haruband.github.io/k8s-istio-ambientmesh-rpfilter/" />
+  <meta name="keywords" content="Arrow, Datafusion, Kubernetes" />
+  <meta name="google-site-verification" content="Your Google Site verification code." />
+  <meta name="msvalidate.01" content="Your Bing Site verification code." />
+  <meta property="og:url" content="https://haruband.github.io/k8s-istio-ambientmesh-rpfilter/" />
+  <meta name="twitter:url" content="https://haruband.github.io/k8s-istio-ambientmesh-rpfilter/" />
+  <meta property="og:description" content="Haruband&#x27;s TechBlog" />
+  <meta name="twitter:description" content="Haruband&#x27;s TechBlog" />
+  <meta property="og:title" content="[K8S&#x2F;Istio] AmbientMesh RPFilter 문제 분석 | CodeBook" />
+  <meta name="twitter:title" content="[K8S&#x2F;Istio] AmbientMesh RPFilter 문제 분석 | CodeBook" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:site_name" content="CodeBook" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:type" content="website" />
+  <meta property="og:updated_time" content="2023-11-03" />
+  <meta name="twitter:site" content="@your-user-name" />
+  <meta name="twitter:creator" content="@your-user-name" />
+  <script defer src="https://haruband.github.io/js/abridge.min.js?h=e0f9a881a665c86cce9c" integrity="sha384-QF67y7RnPkuDrJNQqn3/7nYxqxWkW/qHI7zN0WTES1aXbf+TotoByRBb835fUE6U"></script>
+  <noscript><link rel="stylesheet" href="https://haruband.github.io/nojs.css" /></noscript>
+</head>
+<body>
+  <header>
+    <nav>
+      <div><big><a href="https://haruband.github.io" title="CodeBook">CodeBook</a></big></div>
+      <div>
+
+        <div>
+          <ul><li><a class="s110" href="https://haruband.github.io/archive/"> Posts </a></li><li><a class="s110" href="https://haruband.github.io/tags/"> Tags </a></li><li><i type="reset" id="mode" class="js svgs adjust"></i></ul>
+        </div>
+
+        <div>
+          <div>
+            <form autocomplete=off class="js" name="goSearch" id="searchbox">
+              <div class="searchd">
+                <input id="searchinput" type="text" placeholder="Search" title="Search" />
+                <button type="submit" title="Search" class="svgs svgm search"></button>
+              </div>
+              <div class="results"><div id="suggestions"></div></div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </nav>
+  </header>
+  <main>
+    <article>
+      <h1><a href="https://haruband.github.io/k8s-istio-ambientmesh-rpfilter/">[K8S&#x2F;Istio] AmbientMesh RPFilter 문제 분석</a></h1>
+
+      <span class="s95"> Inhyeok Kim <span class="rpad"></span> November 03, 2023 <span class="rpad"></span>Updated: November 03, 2023 <span class="rpad"></span> #<a href="https://haruband.github.io/tags/k8s/">K8S</a>  #<a href="https://haruband.github.io/tags/kubernetes/">Kubernetes</a>  #<a href="https://haruband.github.io/tags/istio/">Istio</a>  #<a href="https://haruband.github.io/tags/ambientmesh/">AmbientMesh</a> </span>
+
+    
+        <div class="block">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/istio/">Istio (Series)</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh/">[K8S&#x2F;Istio] AmbientMesh 소개</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh-flow/">[K8S&#x2F;Istio] AmbientMesh 동작 과정 분석</a><br>
+            <a class="scur" href="https://haruband.github.io/k8s-istio-ambientmesh-rpfilter/">[K8S&#x2F;Istio] AmbientMesh RPFilter 문제 분석</a><br> 
+          
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh-cilium/">[K8S&#x2F;Istio] AmbientMesh Cilium 문제 분석</a><br>
+      </div>
+    </div>
+
+
+<p>오늘은 Istio 에서 공개한 AmbientMesh 를 처음 설치할 때 겪었던 문제에 대해 소개하고자 한다. 주로 사용하는 Cilium 은 아직 지원되지 않기 때문에 Calico(+IPTables)를 CNI 로 사용하였다.</p>
+<p>간단히 AmbientMesh 를 설치했는데, Ztunnel 이 정상적인 동작을 하지 않았고, 아래와 같은 로그가 반복적으로 출력되고 있었다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">2023-05-11T08:37:59.078700Z</span></span><span class="z-meta z-function-call z-arguments z-shell">  WARN xds<span class="z-meta z-group z-expansion z-brace z-shell"><span class="z-punctuation z-section z-expansion z-brace z-begin z-shell">{</span>id=1<span class="z-punctuation z-section z-expansion z-brace z-end z-shell">}</span></span>: ztunnel::xds::client: XDS client connection error: gRPC connection error (Unknown error</span><span class="z-meta z-function-call z-shell"></span>)<span class="z-meta z-function-call z-shell"><span class="z-support z-function z-colon z-shell">:</span></span><span class="z-meta z-function-call z-arguments z-shell"> client error (Connect</span><span class="z-meta z-function-call z-shell"></span>)<span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">,</span></span><span class="z-meta z-function-call z-arguments z-shell"> retrying in 20ms</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span></code></pre>
+<p>정확한 원인을 파악하기 위해, Ztunnel 의 네트워크 네임스페이스(nsenter)에서 송수신 패킷을 확인(tcpdump)해보니, 아래와 같이 DNS 요청은 나가는데 응답이 오지 않는 상황이었다. 그래서 호스트 네트워크 네임스페이스에서 확인해보니 DNS 요청이 외부로 나가지 않고 있었다. 이런 경우에는 요청 패킷이 호스트에서 드롭되고 있을 가능성이 높고, 주요 원인으로 생각해볼 수 있는 것은 바로 RPFilter 이다. 이유는 Ztunnel 이 투명하게 동작하기 위해 패킷을 전달할 때 출발지 주소로 원래의 출발지 주소를 사용해서 RPFilter 에 의해 문제가 발생할 가능성이 높기 때문이다.</p>
+<p>RPFilter 는 해커들이 DDoS 공격을 할 때 주로 사용하는 IP 스푸핑(Spoofing)을 막기 위해 사용되는 기술이다. IP 스푸핑은 패킷의 출발지 주소를 임의로 조작하여 원하는 결과를 얻어내는 기술이고, RPFilter 는 응답 패킷을 동일한 네트워크 장치를 이용하여 출발지 주소로 전달할 수 있는지를 확인해서 IP 스푸핑을 방지하는 기술이다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">$</span></span><span class="z-meta z-function-call z-arguments z-shell"> nsenter<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> -</span>t</span> <span class="z-meta z-group z-expansion z-command z-parens z-shell"><span class="z-punctuation z-definition z-variable z-shell">$</span><span class="z-punctuation z-section z-parens z-begin z-shell">(</span><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">pidof</span></span><span class="z-meta z-function-call z-arguments z-shell"> ztunnel</span><span class="z-punctuation z-section z-parens z-end z-shell">)</span></span><span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> -</span>n</span> tcpdump<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> -</span>xxx</span><span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> -</span>n</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">01:30:01.942451</span></span><span class="z-meta z-function-call z-arguments z-shell"> IP 10.69.11.13.53562 <span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> <span class="z-constant z-numeric z-integer z-decimal z-file-descriptor z-shell">172</span>.16.0.10.53: 9568+ A<span class="z-keyword z-operator z-regexp z-quantifier z-shell">?</span> istiod.istio-system.svc.istio-system.svc.cluster.local. (72</span><span class="z-meta z-function-call z-shell"></span>)
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span></code></pre>
+<p>우선, 리눅스의 네트워크 스택에 포함되어 있는 RPFilter 기능을 사용하고 있는지를 확인해보았다. 아래와 같이 모든 파드의 호스트 네트워크 장치는 RPFilter 기능을 사용하지 않았고, 이는 Calico 에서 해당 기능 대신 IPTables 가 제공하는 RPFilter 기능을 사용하기 때문이었다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">$</span></span><span class="z-meta z-function-call z-arguments z-shell"> sysctl<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> -</span>a</span></span> <span class="z-keyword z-operator z-logical z-pipe z-shell">|</span> <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">grep</span></span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>\.rp_filter<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">net.ipv4.conf.all.rp_filter</span></span><span class="z-meta z-function-call z-arguments z-shell"> = 0</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">net.ipv4.conf.cali0eff241a9cd.rp_filter</span></span><span class="z-meta z-function-call z-arguments z-shell"> = 0</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">net.ipv4.conf.cali3cd40f41ebe.rp_filter</span></span><span class="z-meta z-function-call z-arguments z-shell"> = 0</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">net.ipv4.conf.cali60c4dd4afb0.rp_filter</span></span><span class="z-meta z-function-call z-arguments z-shell"> = 0</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">net.ipv4.conf.calic30bcf0776f.rp_filter</span></span><span class="z-meta z-function-call z-arguments z-shell"> = 0</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">net.ipv4.conf.default.rp_filter</span></span><span class="z-meta z-function-call z-arguments z-shell"> = 0</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">net.ipv4.conf.enp1s0.rp_filter</span></span><span class="z-meta z-function-call z-arguments z-shell"> = 2</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">net.ipv4.conf.lo.rp_filter</span></span><span class="z-meta z-function-call z-arguments z-shell"> = 0</span>
+</span></code></pre>
+<p>아래는 Calico 가 사용하고 있는 RPFilter 관련된 IPTables 체인 목록이다. 보시는 것처럼 cali-PREROUTING 체인의 4번 룰에서 RPFilter 를 이용하여 패킷을 드롭하는 걸 볼 수 있다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">$</span></span><span class="z-meta z-function-call z-arguments z-shell"> iptables<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> -</span>t</span> raw<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> -</span>L</span><span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> --</span>line-numbers</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Chain</span></span><span class="z-meta z-function-call z-arguments z-shell"> PREROUTING (policy ACCEPT</span><span class="z-meta z-function-call z-shell"></span>)
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">num</span></span><span class="z-meta z-function-call z-arguments z-shell">  target     prot opt source               destination</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">1</span></span><span class="z-meta z-function-call z-arguments z-shell">    cali-PREROUTING  all<span class="z-keyword z-operator z-end-of-options z-shell">  --</span></span><span class="z-meta z-function-call z-arguments z-shell">  anywhere             anywhere             /<span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span> cali:6gwbT8clXdHdC1b1 <span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span>/</span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Chain</span></span><span class="z-meta z-function-call z-arguments z-shell"> cali-PREROUTING (1 references</span><span class="z-meta z-function-call z-shell"></span>)
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">num</span></span><span class="z-meta z-function-call z-arguments z-shell">  target         prot opt source             destination</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">3</span></span><span class="z-meta z-function-call z-arguments z-shell">    cali-rpf-skip  all<span class="z-keyword z-operator z-end-of-options z-shell">  --</span></span><span class="z-meta z-function-call z-arguments z-shell">  anywhere           anywhere    /<span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span> cali:PWuxTAIaFCtsg5Qa <span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span>/ mark match 0x40000/0x40000</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">4</span></span><span class="z-meta z-function-call z-arguments z-shell">    DROP           all<span class="z-keyword z-operator z-end-of-options z-shell">  --</span></span><span class="z-meta z-function-call z-arguments z-shell">  anywhere           anywhere    /<span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span> cali:fSSbGND7dgyemWU7 <span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span>/ mark match 0x40000/0x40000 rpfilter validmark invert</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Chain</span></span><span class="z-meta z-function-call z-arguments z-shell"> cali-rpf-skip (1 references</span><span class="z-meta z-function-call z-shell"></span>)
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">num</span></span><span class="z-meta z-function-call z-arguments z-shell">  target     prot opt source               destination</span>
+</span></code></pre>
+<p>그렇다면 Calico 에서도 AmbientMesh 를 사용할 수 없는 것일까? 그건 아니었고, 아래를 보면 Ztunnel 파드에 이를 해결하기 위한 설정(allowedSourcePrefixes)이 들어있는 것을 볼 수 있다. 해당 설정은 RPFilter 를 우회하기 위한 설정으로, 등록된 주소 대역은 출발지 주소로 사용할 수 있다는 의미이다. 즉, 아래와 같이 설정되었다면 Ztunnel 파드는 패킷의 출발지 주소로 10.0.0.0/8 의 주소 대역을 사용할 수 있다는 것이다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">apiVersion:</span></span><span class="z-meta z-function-call z-arguments z-shell"> v1</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">kind:</span></span><span class="z-meta z-function-call z-arguments z-shell"> Pod</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">metadata:</span></span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">annotations:</span></span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">ambient.istio.io/redirection:</span></span><span class="z-meta z-function-call z-arguments z-shell"> disabled</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">cni.projectcalico.org/allowedSourcePrefixes:</span></span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-string z-quoted z-single z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&#39;</span>[&quot;10.0.0.0/8&quot;]<span class="z-punctuation z-definition z-string z-end z-shell">&#39;</span></span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">labels:</span></span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">app:</span></span><span class="z-meta z-function-call z-arguments z-shell"> ztunnel</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span></code></pre>
+<p>그런데, Ztunnel 파드에 필요한 설정이 들어있음에도 불구하고, 왜 정상적으로 동작하지 않은 것일까? 이유는 해당 설정을 Calico 에서 사용하지 않고 있었기 때문이었다. 해당 기능을 활성화하기 위해서는 Calico 파드(calico-node)에 아래의 환경 변수를 추가해야 한다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-variable z-other z-readwrite z-assignment z-shell">FELIX_WORKLOADSOURCESPOOFING</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">Any</span>
+</span></code></pre>
+<p>Calico 에 해당 기능을 추가한 다음, 다시 IPTables 체인 목록을 확인해보면 4번 룰(DROP)보다 앞에 있는 3번 룰(cali-rpf-skip)의 체인에 새로운 룰이 추가된 것을 볼 수 있다. cali-rpf-skip 체인에 추가된 1번 룰은 위에서 설정한 대로 출발지 주소가 10.0.0.0/8 이면 패킷을 허용(ACCEPT)한다는 의미이다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">$</span></span><span class="z-meta z-function-call z-arguments z-shell"> iptables<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> -</span>t</span> raw<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> -</span>L</span><span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> --</span>line-numbers</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Chain</span></span><span class="z-meta z-function-call z-arguments z-shell"> PREROUTING (policy ACCEPT</span><span class="z-meta z-function-call z-shell"></span>)
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">num</span></span><span class="z-meta z-function-call z-arguments z-shell">  target     prot opt source               destination</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">1</span></span><span class="z-meta z-function-call z-arguments z-shell">    cali-PREROUTING  all<span class="z-keyword z-operator z-end-of-options z-shell">  --</span></span><span class="z-meta z-function-call z-arguments z-shell">  anywhere             anywhere             /<span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span> cali:6gwbT8clXdHdC1b1 <span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span>/</span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Chain</span></span><span class="z-meta z-function-call z-arguments z-shell"> cali-PREROUTING (1 references</span><span class="z-meta z-function-call z-shell"></span>)
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">num</span></span><span class="z-meta z-function-call z-arguments z-shell">  target         prot opt source             destination</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">3</span></span><span class="z-meta z-function-call z-arguments z-shell">    cali-rpf-skip  all<span class="z-keyword z-operator z-end-of-options z-shell">  --</span></span><span class="z-meta z-function-call z-arguments z-shell">  anywhere           anywhere    /<span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span> cali:PWuxTAIaFCtsg5Qa <span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span>/ mark match 0x40000/0x40000</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">4</span></span><span class="z-meta z-function-call z-arguments z-shell">    DROP           all<span class="z-keyword z-operator z-end-of-options z-shell">  --</span></span><span class="z-meta z-function-call z-arguments z-shell">  anywhere           anywhere    /<span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span> cali:fSSbGND7dgyemWU7 <span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span>/ mark match 0x40000/0x40000 rpfilter validmark invert</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Chain</span></span><span class="z-meta z-function-call z-arguments z-shell"> cali-rpf-skip (1 references</span><span class="z-meta z-function-call z-shell"></span>)
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">num</span></span><span class="z-meta z-function-call z-arguments z-shell">  target     prot opt source               destination</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">1</span></span><span class="z-meta z-function-call z-arguments z-shell">    ACCEPT     all<span class="z-keyword z-operator z-end-of-options z-shell">  --</span></span><span class="z-meta z-function-call z-arguments z-shell">  10.0.0.0/8           anywhere             /<span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span> cali:bSgSJ0C4gCLn3ilJ <span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span>/</span>
+</span></code></pre>
+<p>지금까지 AmbientMesh 를 처음 설치하면서 겪었던 문제에 대해 분석하였다. AmbientMesh 뿐 아니라 대부분의 CNI 는 패킷을 조작하여 원하는 기능을 수행하는 경우가 많기 때문에 RPFilter 에 대해서는 충분히 이해하고 있을 필요가 있다.</p>
+
+      <nav>
+        <div>
+          <a href="https://haruband.github.io/k8s-istio-ambientmesh-cilium/">&#8249; [K8S&#x2F;Istio] AmbientMesh Cilium 문제 분석</a>
+        </div>
+        <div>
+          <a href="https://haruband.github.io/k8s-istio-ambientmesh-flow/"> [K8S&#x2F;Istio] AmbientMesh 동작 과정 분석 &#8250;</a>
+        </div>
+      </nav>
+    </article>
+
+    <div class="sblock">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/istio/">Series</a><br>
+            
+      <a href="https://haruband.github.io/k8s-istio-ambientmesh/">[K8S&#x2F;Istio] AmbientMesh 소개</a><br>
+            
+      <a href="https://haruband.github.io/k8s-istio-ambientmesh-flow/">[K8S&#x2F;Istio] AmbientMesh 동작 과정 분석</a><br>
+            
+      <a class="scur" href="https://haruband.github.io/k8s-istio-ambientmesh-rpfilter/">[K8S&#x2F;Istio] AmbientMesh RPFilter 문제 분석</a><br>
+    
+            
+      <a href="https://haruband.github.io/k8s-istio-ambientmesh-cilium/">[K8S&#x2F;Istio] AmbientMesh Cilium 문제 분석</a><br>
+      </div>
+  </main>
+  <footer>
+    <div class="c">
+      <nav class="tpad"><div><a href="https://www.linkedin.com/in/inhyeok-kim-7620a0b0/" target="_blank" title="LinkedIn"><i type="Button" class="svg linkedin" title="LinkedIn"></i></a><a href="https://github.com/haruband/" target="_blank" title="Github"><i type="Button" class="svg github" title="Github"></i></a></div></nav>
+      <nav class="vpad">
+        <a class="rpad s90" href="https://haruband.github.io/about/"> About </a>
+        <a class="rpad s90" href="https://haruband.github.io/contact/"> Contact </a>
+      </nav>
+      <p class="s80"> &copy; <span id="year">2025</span> CodeBook</p>
+      <p class="s80">Powered by <a href="https://www.getzola.org/" target="_blank">Zola</a> & <a href="https://github.com/jieiku/abridge/" target="_blank">Abridge</a></p>
+    </div>
+  </footer><span class="topout">
+<span class="topleft"> </span><a href="#" class="top" title="Back to Top"><i class="svgs svgh angu"></i></a>
+</span>
+</body>
+</html>

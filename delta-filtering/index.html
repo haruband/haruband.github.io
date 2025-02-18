@@ -1,0 +1,189 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://haruband.github.io/js/theme.min.js" integrity="sha384-pb++s6uBRKaQv+iAXpgA/H3IlpLZdO14tTwuCI7uXmz4aaZdByoCcM+6BhynMq/1"></script>
+  <link rel="stylesheet" href="https://haruband.github.io/abridge.css?h=98ebdf6fd3d59dfb2edf" />
+  <meta charset="utf-8" />
+  <meta http-equiv="x-ua-compatible" content="ie=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="base" content="https://haruband.github.io" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#333333" />
+  <meta name="msapplication-TileColor" content="#333333" />
+  <link rel="manifest" href="https://haruband.github.io/manifest.min.json" />
+  <link rel="mask-icon" href="https://haruband.github.io/safari-pinned-tab.svg" color="#ff9900" />
+  <link rel="icon" type="image/svg+xml" href="https://haruband.github.io/favicon.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="https://haruband.github.io/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="https://haruband.github.io/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="https://haruband.github.io/favicon-16x16.png" />
+  <link rel="alternate" type="application/atom+xml" title="CodeBook Atom Feed" href="https://haruband.github.io/atom.xml" />
+  <meta name="robots" content="index, follow" />
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <title>[Delta] 읽기 성능 최적화 | CodeBook</title>
+  <meta name="author" content="Inhyeok Kim" />
+  <meta name="copyright" content="CodeBook" />
+  <meta name="description" content="Haruband&#x27;s TechBlog" />
+  <link rel="canonical" href="https://haruband.github.io/delta-filtering/" />
+  <meta name="keywords" content="Arrow, Datafusion, Kubernetes" />
+  <meta name="google-site-verification" content="Your Google Site verification code." />
+  <meta name="msvalidate.01" content="Your Bing Site verification code." />
+  <meta property="og:url" content="https://haruband.github.io/delta-filtering/" />
+  <meta name="twitter:url" content="https://haruband.github.io/delta-filtering/" />
+  <meta property="og:description" content="Haruband&#x27;s TechBlog" />
+  <meta name="twitter:description" content="Haruband&#x27;s TechBlog" />
+  <meta property="og:title" content="[Delta] 읽기 성능 최적화 | CodeBook" />
+  <meta name="twitter:title" content="[Delta] 읽기 성능 최적화 | CodeBook" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:site_name" content="CodeBook" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:type" content="website" />
+  <meta property="og:updated_time" content="2022-01-15" />
+  <meta name="twitter:site" content="@your-user-name" />
+  <meta name="twitter:creator" content="@your-user-name" />
+  <script defer src="https://haruband.github.io/js/abridge.min.js?h=e0f9a881a665c86cce9c" integrity="sha384-QF67y7RnPkuDrJNQqn3/7nYxqxWkW/qHI7zN0WTES1aXbf+TotoByRBb835fUE6U"></script>
+  <noscript><link rel="stylesheet" href="https://haruband.github.io/nojs.css" /></noscript>
+</head>
+<body>
+  <header>
+    <nav>
+      <div><big><a href="https://haruband.github.io" title="CodeBook">CodeBook</a></big></div>
+      <div>
+
+        <div>
+          <ul><li><a class="s110" href="https://haruband.github.io/archive/"> Posts </a></li><li><a class="s110" href="https://haruband.github.io/tags/"> Tags </a></li><li><i type="reset" id="mode" class="js svgs adjust"></i></ul>
+        </div>
+
+        <div>
+          <div>
+            <form autocomplete=off class="js" name="goSearch" id="searchbox">
+              <div class="searchd">
+                <input id="searchinput" type="text" placeholder="Search" title="Search" />
+                <button type="submit" title="Search" class="svgs svgm search"></button>
+              </div>
+              <div class="results"><div id="suggestions"></div></div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </nav>
+  </header>
+  <main>
+    <article>
+      <h1><a href="https://haruband.github.io/delta-filtering/">[Delta] 읽기 성능 최적화</a></h1>
+
+      <span class="s95"> Inhyeok Kim <span class="rpad"></span> January 15, 2022 <span class="rpad"></span>Updated: January 15, 2022 <span class="rpad"></span> #<a href="https://haruband.github.io/tags/delta/">Delta</a> </span>
+
+    
+        <div class="block">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/delta/">Delta (Series)</a><br>
+            <a href="https://haruband.github.io/delta-overview/">[Delta] 델타로그 분석</a><br>
+            <a href="https://haruband.github.io/delta-optimize/">[Delta] 델타로그 최적화</a><br>
+            <a class="scur" href="https://haruband.github.io/delta-filtering/">[Delta] 읽기 성능 최적화</a><br> 
+          
+            <a href="https://haruband.github.io/delta-checkpoints/">[Delta] 델타로그 체크포인트 분석</a><br>
+            <a href="https://haruband.github.io/delta-cleanup/">[Delta] 델타로그 CleanUp 문제 분석</a><br>
+      </div>
+    </div>
+
+
+<p>델타레이크는 효율적인 읽기 작업을 위해 여러 가지 최적화 기법을 제공한다. 최적화 기법은 크게 델타로그를 이용해서 데이터 파일을 필터링하는 방식과 파케이(Parquet)가 제공하는 필터링 기능을 이용하는 방식으로 나뉜다. 오늘은 아래 예제를 이용해서 필수적인 최적화 기법들이 어떻게 적용되는지 하나씩 살펴보자.
+(델타레이크의 모든 데이터 파일은 파케이(Parquet) 형식이다.)</p>
+<pre data-lang="python" class="language-python z-code"><code class="language-python" data-lang="python"><span class="z-source z-python"><span class="z-constant z-language z-python">...</span>
+</span><span class="z-source z-python"><span class="z-meta z-qualified-name z-python"><span class="z-meta z-generic-name z-python">df</span></span> <span class="z-keyword z-operator z-assignment z-python">=</span> <span class="z-meta z-qualified-name z-python"><span class="z-meta z-generic-name z-python">df</span></span>
+</span><span class="z-source z-python">    <span class="z-meta z-function-call z-python"><span class="z-meta z-qualified-name z-python"><span class="z-punctuation z-accessor z-dot z-python">.</span></span><span class="z-meta z-qualified-name z-python"><span class="z-variable z-function z-python"><span class="z-meta z-generic-name z-python">where</span></span></span></span><span class="z-meta z-function-call z-arguments z-python"><span class="z-punctuation z-section z-arguments z-begin z-python">(</span><span class="z-meta z-qualified-name z-python"><span class="z-meta z-generic-name z-python">df</span><span class="z-punctuation z-accessor z-dot z-python">.</span><span class="z-meta z-generic-name z-python">year</span></span> <span class="z-keyword z-operator z-comparison z-python">==</span> <span class="z-meta z-string z-python"><span class="z-string z-quoted z-double z-python"><span class="z-punctuation z-definition z-string z-begin z-python">&quot;</span></span></span><span class="z-meta z-string z-python"><span class="z-string z-quoted z-double z-python">2000<span class="z-punctuation z-definition z-string z-end z-python">&quot;</span></span></span><span class="z-punctuation z-section z-arguments z-end z-python">)</span></span>
+</span><span class="z-source z-python">    <span class="z-meta z-function-call z-python"><span class="z-meta z-qualified-name z-python"><span class="z-punctuation z-accessor z-dot z-python">.</span></span><span class="z-meta z-qualified-name z-python"><span class="z-variable z-function z-python"><span class="z-meta z-generic-name z-python">where</span></span></span></span><span class="z-meta z-function-call z-arguments z-python"><span class="z-punctuation z-section z-arguments z-begin z-python">(</span><span class="z-meta z-qualified-name z-python"><span class="z-meta z-generic-name z-python">df</span><span class="z-punctuation z-accessor z-dot z-python">.</span><span class="z-meta z-generic-name z-python">gender</span></span> <span class="z-keyword z-operator z-comparison z-python">==</span> <span class="z-meta z-string z-python"><span class="z-string z-quoted z-double z-python"><span class="z-punctuation z-definition z-string z-begin z-python">&quot;</span></span></span><span class="z-meta z-string z-python"><span class="z-string z-quoted z-double z-python">male<span class="z-punctuation z-definition z-string z-end z-python">&quot;</span></span></span><span class="z-punctuation z-section z-arguments z-end z-python">)</span></span>
+</span><span class="z-source z-python">    <span class="z-meta z-function-call z-python"><span class="z-meta z-qualified-name z-python"><span class="z-punctuation z-accessor z-dot z-python">.</span></span><span class="z-meta z-qualified-name z-python"><span class="z-variable z-function z-python"><span class="z-meta z-generic-name z-python">where</span></span></span></span><span class="z-meta z-function-call z-arguments z-python"><span class="z-punctuation z-section z-arguments z-begin z-python">(</span><span class="z-meta z-qualified-name z-python"><span class="z-meta z-generic-name z-python">df</span><span class="z-punctuation z-accessor z-dot z-python">.</span><span class="z-meta z-generic-name z-python">salary</span></span> <span class="z-keyword z-operator z-comparison z-python">&gt;=</span> <span class="z-constant z-numeric z-integer z-decimal z-python">4000</span><span class="z-punctuation z-section z-arguments z-end z-python">)</span></span>
+</span><span class="z-source z-python">    <span class="z-meta z-function-call z-python"><span class="z-meta z-qualified-name z-python"><span class="z-punctuation z-accessor z-dot z-python">.</span></span><span class="z-meta z-qualified-name z-python"><span class="z-variable z-function z-python"><span class="z-meta z-generic-name z-python">select</span></span></span></span><span class="z-meta z-function-call z-arguments z-python"><span class="z-punctuation z-section z-arguments z-begin z-python">(</span><span class="z-meta z-string z-python"><span class="z-string z-quoted z-double z-python"><span class="z-punctuation z-definition z-string z-begin z-python">&quot;</span></span></span><span class="z-meta z-string z-python"><span class="z-string z-quoted z-double z-python">year<span class="z-punctuation z-definition z-string z-end z-python">&quot;</span></span></span><span class="z-punctuation z-separator z-arguments z-python">,</span> <span class="z-meta z-string z-python"><span class="z-string z-quoted z-double z-python"><span class="z-punctuation z-definition z-string z-begin z-python">&quot;</span></span></span><span class="z-meta z-string z-python"><span class="z-string z-quoted z-double z-python">gender<span class="z-punctuation z-definition z-string z-end z-python">&quot;</span></span></span><span class="z-punctuation z-separator z-arguments z-python">,</span> <span class="z-meta z-string z-python"><span class="z-string z-quoted z-double z-python"><span class="z-punctuation z-definition z-string z-begin z-python">&quot;</span></span></span><span class="z-meta z-string z-python"><span class="z-string z-quoted z-double z-python">salary<span class="z-punctuation z-definition z-string z-end z-python">&quot;</span></span></span><span class="z-punctuation z-section z-arguments z-end z-python">)</span></span>
+</span><span class="z-source z-python"><span class="z-constant z-language z-python">...</span>
+</span></code></pre>
+<h2 id="partition-pruning">Partition Pruning</h2>
+<p>델타레이크는 사용 중인 파티션 필드에 대한 정보를 메타데이터(metadata) 로그에 담고 있다. 아래 로그를 보면 두 개의 파티션 필드(year, gender)를 사용하고 있는 것을 알 수 있다.</p>
+<pre data-lang="json" class="language-json z-code"><code class="language-json" data-lang="json"><span class="z-source z-json"><span class="z-meta z-mapping z-json"><span class="z-punctuation z-section z-mapping z-begin z-json">{</span></span><span class="z-meta z-mapping z-key z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>metaData<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span></span><span class="z-meta z-mapping z-json"><span class="z-punctuation z-separator z-mapping z-key-value z-json">:</span> </span><span class="z-meta z-mapping z-value z-json"><span class="z-meta z-mapping z-json"><span class="z-punctuation z-section z-mapping z-begin z-json">{</span></span><span class="z-meta z-mapping z-key z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>partitionColumns<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span></span><span class="z-meta z-mapping z-json"><span class="z-punctuation z-separator z-mapping z-key-value z-json">:</span> </span><span class="z-meta z-mapping z-value z-json"><span class="z-meta z-sequence z-json"><span class="z-punctuation z-section z-sequence z-begin z-json">[</span><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>year<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span><span class="z-punctuation z-separator z-sequence z-json">,</span> <span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>gender<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span><span class="z-punctuation z-section z-sequence z-end z-json">]</span></span><span class="z-punctuation z-section z-mapping z-end z-json">}</span></span><span class="z-punctuation z-section z-mapping z-end z-json">}</span></span>
+</span></code></pre>
+<p>각각의 데이터 파일에 대한 파티션 정보는 아래와 같이 파일추가(add) 로그에 저장되어 있다. partitionValues 필드에 각각의 파티션 정보를 가지고 있는데, 아래 로그에서 첫 번째 데이터 파일의 year 필드는 "2000" 이고 gender 필드는 "male" 인 것을 볼 수 있다. 그래서 데이터 파일의 경로(path)는 "year=2000/gender=male/.." 로 시작한다.</p>
+<pre data-lang="json" class="language-json z-code"><code class="language-json" data-lang="json"><span class="z-source z-json"><span class="z-meta z-mapping z-json"><span class="z-punctuation z-section z-mapping z-begin z-json">{</span></span><span class="z-meta z-mapping z-key z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>add<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span></span><span class="z-meta z-mapping z-json"><span class="z-punctuation z-separator z-mapping z-key-value z-json">:</span></span><span class="z-meta z-mapping z-value z-json"><span class="z-meta z-mapping z-json"><span class="z-punctuation z-section z-mapping z-begin z-json">{</span></span><span class="z-meta z-mapping z-key z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>path<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span></span><span class="z-meta z-mapping z-json"><span class="z-punctuation z-separator z-mapping z-key-value z-json">:</span></span><span class="z-meta z-mapping z-value z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>year=2000/gender=male/part-00001-bb169a3b-6b2f-4432-a686-c5c596526780.c000.snappy.parquet<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span><span class="z-punctuation z-separator z-mapping z-pair z-json">,</span></span><span class="z-meta z-mapping z-key z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>partitionValues<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span></span><span class="z-meta z-mapping z-value z-json"><span class="z-punctuation z-separator z-mapping z-key-value z-json">:</span></span><span class="z-meta z-mapping z-value z-json"><span class="z-meta z-mapping z-json"><span class="z-punctuation z-section z-mapping z-begin z-json">{</span></span><span class="z-meta z-mapping z-key z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>year<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span></span><span class="z-meta z-mapping z-json"><span class="z-punctuation z-separator z-mapping z-key-value z-json">:</span></span><span class="z-meta z-mapping z-value z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>2000<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span><span class="z-punctuation z-separator z-mapping z-pair z-json">,</span></span><span class="z-meta z-mapping z-key z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>gender<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span></span><span class="z-meta z-mapping z-value z-json"><span class="z-punctuation z-separator z-mapping z-key-value z-json">:</span></span><span class="z-meta z-mapping z-value z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>male<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span><span class="z-punctuation z-section z-mapping z-end z-json">}</span></span><span class="z-punctuation z-section z-mapping z-end z-json">}</span></span>
+</span></span><span class="z-source z-json"><span class="z-meta z-mapping z-value z-json"><span class="z-invalid z-illegal z-expected-mapping-separator z-json">{</span></span><span class="z-meta z-mapping z-key z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>add<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span></span><span class="z-meta z-mapping z-value z-json"><span class="z-punctuation z-separator z-mapping z-key-value z-json">:</span></span><span class="z-meta z-mapping z-value z-json"><span class="z-meta z-mapping z-json"><span class="z-punctuation z-section z-mapping z-begin z-json">{</span></span><span class="z-meta z-mapping z-key z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>path<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span></span><span class="z-meta z-mapping z-json"><span class="z-punctuation z-separator z-mapping z-key-value z-json">:</span></span><span class="z-meta z-mapping z-value z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>year=2000/gender=male/part-00003-e0c02983-d88b-4a70-9855-42cc1a8766a5.c000.snappy.parquet<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span><span class="z-punctuation z-separator z-mapping z-pair z-json">,</span></span><span class="z-meta z-mapping z-key z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>partitionValues<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span></span><span class="z-meta z-mapping z-value z-json"><span class="z-punctuation z-separator z-mapping z-key-value z-json">:</span></span><span class="z-meta z-mapping z-value z-json"><span class="z-meta z-mapping z-json"><span class="z-punctuation z-section z-mapping z-begin z-json">{</span></span><span class="z-meta z-mapping z-key z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>year<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span></span><span class="z-meta z-mapping z-json"><span class="z-punctuation z-separator z-mapping z-key-value z-json">:</span></span><span class="z-meta z-mapping z-value z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>2000<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span><span class="z-punctuation z-separator z-mapping z-pair z-json">,</span></span><span class="z-meta z-mapping z-key z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>gender<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span></span><span class="z-meta z-mapping z-value z-json"><span class="z-punctuation z-separator z-mapping z-key-value z-json">:</span></span><span class="z-meta z-mapping z-value z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>male<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span><span class="z-punctuation z-section z-mapping z-end z-json">}</span></span><span class="z-punctuation z-section z-mapping z-end z-json">}</span></span>
+</span></span></code></pre>
+<p>델타레이크는 내부적으로 필요한 로그 정보를 스파크의 데이터프레임으로 관리하고 있고, 위의 파일추가(add) 로그만을 모은 데이터프레임에서 partitionValues 필드를 필터링하는 방식으로 동작하기 때문에 파일의 수가 많아도 빠르게 병렬 처리가 가능하다.</p>
+<p>아래는 예제의 물리적 실행 계획에서 파티션 프루닝이 적용된 모습이다. 예제의 조건문(where) 중에서 파티션 필드에 해당하는 year, gender 필드만 추가되어있다.</p>
+<pre class="z-code"><code><span class="z-text z-plain">+- FileScan parquet PartitionFilters: [isnotnull(year#502), isnotnull(gender#503), (year#502 = 2000), (gender#503 = male)], ...
+</span></code></pre>
+<h2 id="predicate-pushdown">Predicate Pushdown</h2>
+<p>델타레이크에서 조건절 푸시다운(Predicate Pushdown)은 크게 두 단계로 동작한다. 첫 번째 단계는 델타로그의 파일추가 로그에 있는 통계 정보를 이용하여 데이터 파일을 필터링하는 것이고, 두 번째 단계는 파케이가 제공하는 푸시다운 기능을 이용하여 행 그룹을 필터링하는 것이다.</p>
+<p>우선 델타로그부터 살펴보자. 아래 파일추가 로그에서 통계 정보인 stats 필드를 보면 각 필드의 최대값(maxValues)과 최소값(minValues)을 알 수 있기 때문에, 파티션 프루닝과 마찬가지로 파일추가 로그만을 모은 데이터프레임에서 stats 필드를 필터링하는 방식으로 빠르게 조건에 맞는 파일들을 찾을 수 있다.</p>
+<pre data-lang="json" class="language-json z-code"><code class="language-json" data-lang="json"><span class="z-source z-json"><span class="z-meta z-mapping z-json"><span class="z-punctuation z-section z-mapping z-begin z-json">{</span></span><span class="z-meta z-mapping z-key z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>add<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span></span><span class="z-meta z-mapping z-json"><span class="z-punctuation z-separator z-mapping z-key-value z-json">:</span></span><span class="z-meta z-mapping z-value z-json"><span class="z-meta z-mapping z-json"><span class="z-punctuation z-section z-mapping z-begin z-json">{</span></span><span class="z-meta z-mapping z-key z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>path<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span></span><span class="z-meta z-mapping z-json"><span class="z-punctuation z-separator z-mapping z-key-value z-json">:</span></span><span class="z-meta z-mapping z-value z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>year=2000/gender=male/part-00001-bb169a3b-6b2f-4432-a686-c5c596526780.c000.snappy.parquet<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span><span class="z-punctuation z-separator z-mapping z-pair z-json">,</span></span><span class="z-meta z-mapping z-key z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>stats<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span></span><span class="z-meta z-mapping z-value z-json"><span class="z-punctuation z-separator z-mapping z-key-value z-json">:</span></span><span class="z-meta z-mapping z-value z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>{<span class="z-constant z-character z-escape z-json">\&quot;</span>numRecords<span class="z-constant z-character z-escape z-json">\&quot;</span>:1,<span class="z-constant z-character z-escape z-json">\&quot;</span>minValues<span class="z-constant z-character z-escape z-json">\&quot;</span>:{<span class="z-constant z-character z-escape z-json">\&quot;</span>firstname<span class="z-constant z-character z-escape z-json">\&quot;</span>:<span class="z-constant z-character z-escape z-json">\&quot;</span>James<span class="z-constant z-character z-escape z-json">\&quot;</span>,<span class="z-constant z-character z-escape z-json">\&quot;</span>middlename<span class="z-constant z-character z-escape z-json">\&quot;</span>:<span class="z-constant z-character z-escape z-json">\&quot;</span><span class="z-constant z-character z-escape z-json">\&quot;</span>,<span class="z-constant z-character z-escape z-json">\&quot;</span>lastname<span class="z-constant z-character z-escape z-json">\&quot;</span>:<span class="z-constant z-character z-escape z-json">\&quot;</span>Smith<span class="z-constant z-character z-escape z-json">\&quot;</span>,<span class="z-constant z-character z-escape z-json">\&quot;</span>salary<span class="z-constant z-character z-escape z-json">\&quot;</span>:3000},<span class="z-constant z-character z-escape z-json">\&quot;</span>maxValues<span class="z-constant z-character z-escape z-json">\&quot;</span>:{<span class="z-constant z-character z-escape z-json">\&quot;</span>firstname<span class="z-constant z-character z-escape z-json">\&quot;</span>:<span class="z-constant z-character z-escape z-json">\&quot;</span>James<span class="z-constant z-character z-escape z-json">\&quot;</span>,<span class="z-constant z-character z-escape z-json">\&quot;</span>middlename<span class="z-constant z-character z-escape z-json">\&quot;</span>:<span class="z-constant z-character z-escape z-json">\&quot;</span><span class="z-constant z-character z-escape z-json">\&quot;</span>,<span class="z-constant z-character z-escape z-json">\&quot;</span>lastname<span class="z-constant z-character z-escape z-json">\&quot;</span>:<span class="z-constant z-character z-escape z-json">\&quot;</span>Smith<span class="z-constant z-character z-escape z-json">\&quot;</span>,<span class="z-constant z-character z-escape z-json">\&quot;</span>salary<span class="z-constant z-character z-escape z-json">\&quot;</span>:3000},<span class="z-constant z-character z-escape z-json">\&quot;</span>nullCount<span class="z-constant z-character z-escape z-json">\&quot;</span>:{<span class="z-constant z-character z-escape z-json">\&quot;</span>firstname<span class="z-constant z-character z-escape z-json">\&quot;</span>:0,<span class="z-constant z-character z-escape z-json">\&quot;</span>middlename<span class="z-constant z-character z-escape z-json">\&quot;</span>:0,<span class="z-constant z-character z-escape z-json">\&quot;</span>lastname<span class="z-constant z-character z-escape z-json">\&quot;</span>:0,<span class="z-constant z-character z-escape z-json">\&quot;</span>salary<span class="z-constant z-character z-escape z-json">\&quot;</span>:0}}<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span><span class="z-punctuation z-section z-mapping z-end z-json">}</span></span><span class="z-punctuation z-section z-mapping z-end z-json">}</span></span>
+</span><span class="z-source z-json"><span class="z-meta z-mapping z-json"><span class="z-punctuation z-section z-mapping z-begin z-json">{</span></span><span class="z-meta z-mapping z-key z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>add<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span></span><span class="z-meta z-mapping z-json"><span class="z-punctuation z-separator z-mapping z-key-value z-json">:</span></span><span class="z-meta z-mapping z-value z-json"><span class="z-meta z-mapping z-json"><span class="z-punctuation z-section z-mapping z-begin z-json">{</span></span><span class="z-meta z-mapping z-key z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>path<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span></span><span class="z-meta z-mapping z-json"><span class="z-punctuation z-separator z-mapping z-key-value z-json">:</span></span><span class="z-meta z-mapping z-value z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>year=2000/gender=male/part-00003-e0c02983-d88b-4a70-9855-42cc1a8766a5.c000.snappy.parquet<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span><span class="z-punctuation z-separator z-mapping z-pair z-json">,</span></span><span class="z-meta z-mapping z-key z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>stats<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span></span><span class="z-meta z-mapping z-value z-json"><span class="z-punctuation z-separator z-mapping z-key-value z-json">:</span></span><span class="z-meta z-mapping z-value z-json"><span class="z-string z-quoted z-double z-json"><span class="z-punctuation z-definition z-string z-begin z-json">&quot;</span>{<span class="z-constant z-character z-escape z-json">\&quot;</span>numRecords<span class="z-constant z-character z-escape z-json">\&quot;</span>:1,<span class="z-constant z-character z-escape z-json">\&quot;</span>minValues<span class="z-constant z-character z-escape z-json">\&quot;</span>:{<span class="z-constant z-character z-escape z-json">\&quot;</span>firstname<span class="z-constant z-character z-escape z-json">\&quot;</span>:<span class="z-constant z-character z-escape z-json">\&quot;</span>Michael<span class="z-constant z-character z-escape z-json">\&quot;</span>,<span class="z-constant z-character z-escape z-json">\&quot;</span>middlename<span class="z-constant z-character z-escape z-json">\&quot;</span>:<span class="z-constant z-character z-escape z-json">\&quot;</span>Rose<span class="z-constant z-character z-escape z-json">\&quot;</span>,<span class="z-constant z-character z-escape z-json">\&quot;</span>lastname<span class="z-constant z-character z-escape z-json">\&quot;</span>:<span class="z-constant z-character z-escape z-json">\&quot;</span><span class="z-constant z-character z-escape z-json">\&quot;</span>,<span class="z-constant z-character z-escape z-json">\&quot;</span>salary<span class="z-constant z-character z-escape z-json">\&quot;</span>:4000},<span class="z-constant z-character z-escape z-json">\&quot;</span>maxValues<span class="z-constant z-character z-escape z-json">\&quot;</span>:{<span class="z-constant z-character z-escape z-json">\&quot;</span>firstname<span class="z-constant z-character z-escape z-json">\&quot;</span>:<span class="z-constant z-character z-escape z-json">\&quot;</span>Michael<span class="z-constant z-character z-escape z-json">\&quot;</span>,<span class="z-constant z-character z-escape z-json">\&quot;</span>middlename<span class="z-constant z-character z-escape z-json">\&quot;</span>:<span class="z-constant z-character z-escape z-json">\&quot;</span>Rose<span class="z-constant z-character z-escape z-json">\&quot;</span>,<span class="z-constant z-character z-escape z-json">\&quot;</span>lastname<span class="z-constant z-character z-escape z-json">\&quot;</span>:<span class="z-constant z-character z-escape z-json">\&quot;</span><span class="z-constant z-character z-escape z-json">\&quot;</span>,<span class="z-constant z-character z-escape z-json">\&quot;</span>salary<span class="z-constant z-character z-escape z-json">\&quot;</span>:4000},<span class="z-constant z-character z-escape z-json">\&quot;</span>nullCount<span class="z-constant z-character z-escape z-json">\&quot;</span>:{<span class="z-constant z-character z-escape z-json">\&quot;</span>firstname<span class="z-constant z-character z-escape z-json">\&quot;</span>:0,<span class="z-constant z-character z-escape z-json">\&quot;</span>middlename<span class="z-constant z-character z-escape z-json">\&quot;</span>:0,<span class="z-constant z-character z-escape z-json">\&quot;</span>lastname<span class="z-constant z-character z-escape z-json">\&quot;</span>:0,<span class="z-constant z-character z-escape z-json">\&quot;</span>salary<span class="z-constant z-character z-escape z-json">\&quot;</span>:0}}<span class="z-punctuation z-definition z-string z-end z-json">&quot;</span></span><span class="z-punctuation z-section z-mapping z-end z-json">}</span></span><span class="z-punctuation z-section z-mapping z-end z-json">}</span></span>
+</span></code></pre>
+<p>아래는 예제의 물리적 실행 계획에서 조건절 푸시다운이 적용된 모습이다. 예제의 조건문 중에서 파티션 필드를 제외한 salary 필드만 추가되어있다.</p>
+<pre class="z-code"><code><span class="z-text z-plain">+- FileScan parquet DataFilters: [isnotnull(salary#504L), (salary#504L &gt;= 4000)], ...
+</span></code></pre>
+<p>그리고 스파크가 이미 파케이 파일에 대한 푸시다운 기능을 제공하고 있기 때문에 이를 활용하면, 데이터 파일 전체가 아닌 필요한 행 그룹만을 빠르게 가져올 수 있다. 아래는 예제의 물리적 실행 계획에서 조건절 푸시다운이 적용된 모습이다. 파티션 필드는 파케이 파일에 포함되어 있지 않기 때문에 파티션 필드를 제외한 salary 필드만 추가되어있다.</p>
+<pre class="z-code"><code><span class="z-text z-plain">+- FileScan parquet PushedFilters: [IsNotNull(salary), GreaterThanOrEqual(salary,4000)], ...
+</span></code></pre>
+<h2 id="projection-pruning">Projection Pruning</h2>
+<p>파케이 파일에서 특정 필드만 읽는 기능도 스파크가 이미 제공하고 있기 때문에 이를 활용하면 불필요한 필드를 가져오는 비용을 줄일 수 있다. 아래는 예제의 물리적 실행 계획에서 프로젝션 프루닝이 적용된 모습이다. 예제의 선택문(select) 중에서 파티션 필드는 파케이 파일에 포함되어 있지 않기 때문에 파티션 필드를 제외한 salary 필드만 추가되어있다.</p>
+<pre class="z-code"><code><span class="z-text z-plain">+- FileScan parquet ReadSchema: struct&lt;salary:bigint&gt;, ...
+</span></code></pre>
+<p>지금까지 소개한 최적화 기법을 이용하면 델타레이크를 통해 필요한 데이터 파일에서, 필요한 행 그룹에서, 필요한 필드만을 효과적으로 가져와서 처리할 수 있다.</p>
+
+      <nav>
+        <div>
+          <a href="https://haruband.github.io/delta-checkpoints/">&#8249; [Delta] 델타로그 체크포인트 분석</a>
+        </div>
+        <div>
+          <a href="https://haruband.github.io/delta-optimize/"> [Delta] 델타로그 최적화 &#8250;</a>
+        </div>
+      </nav>
+    </article>
+
+    <div class="sblock">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/delta/">Series</a><br>
+            
+      <a href="https://haruband.github.io/delta-overview/">[Delta] 델타로그 분석</a><br>
+            
+      <a href="https://haruband.github.io/delta-optimize/">[Delta] 델타로그 최적화</a><br>
+            
+      <a class="scur" href="https://haruband.github.io/delta-filtering/">[Delta] 읽기 성능 최적화</a><br>
+    
+            
+      <a href="https://haruband.github.io/delta-checkpoints/">[Delta] 델타로그 체크포인트 분석</a><br>
+            
+      <a href="https://haruband.github.io/delta-cleanup/">[Delta] 델타로그 CleanUp 문제 분석</a><br>
+      </div>
+      <div class="blockdiv sticky">
+        <a class="b s150" href="#">Index</a>
+        <div>
+          <a href="#partition-pruning">Partition Pruning</a>
+        </div>
+        <div>
+          <a href="#predicate-pushdown">Predicate Pushdown</a>
+        </div>
+        <div>
+          <a href="#projection-pruning">Projection Pruning</a>
+        </div>
+      </div>
+    </div>
+  </main>
+  <footer>
+    <div class="c">
+      <nav class="tpad"><div><a href="https://www.linkedin.com/in/inhyeok-kim-7620a0b0/" target="_blank" title="LinkedIn"><i type="Button" class="svg linkedin" title="LinkedIn"></i></a><a href="https://github.com/haruband/" target="_blank" title="Github"><i type="Button" class="svg github" title="Github"></i></a></div></nav>
+      <nav class="vpad">
+        <a class="rpad s90" href="https://haruband.github.io/about/"> About </a>
+        <a class="rpad s90" href="https://haruband.github.io/contact/"> Contact </a>
+      </nav>
+      <p class="s80"> &copy; <span id="year">2025</span> CodeBook</p>
+      <p class="s80">Powered by <a href="https://www.getzola.org/" target="_blank">Zola</a> & <a href="https://github.com/jieiku/abridge/" target="_blank">Abridge</a></p>
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,204 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://haruband.github.io/js/theme.min.js" integrity="sha384-pb++s6uBRKaQv+iAXpgA/H3IlpLZdO14tTwuCI7uXmz4aaZdByoCcM+6BhynMq/1"></script>
+  <link rel="stylesheet" href="https://haruband.github.io/abridge.css?h=98ebdf6fd3d59dfb2edf" />
+  <meta charset="utf-8" />
+  <meta http-equiv="x-ua-compatible" content="ie=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="base" content="https://haruband.github.io" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#333333" />
+  <meta name="msapplication-TileColor" content="#333333" />
+  <link rel="manifest" href="https://haruband.github.io/manifest.min.json" />
+  <link rel="mask-icon" href="https://haruband.github.io/safari-pinned-tab.svg" color="#ff9900" />
+  <link rel="icon" type="image/svg+xml" href="https://haruband.github.io/favicon.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="https://haruband.github.io/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="https://haruband.github.io/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="https://haruband.github.io/favicon-16x16.png" />
+  <link rel="alternate" type="application/atom+xml" title="CodeBook Atom Feed" href="https://haruband.github.io/atom.xml" />
+  <meta name="robots" content="index, follow" />
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <title>[K8S/Cilium] 라우팅 기법 성능 평가 | CodeBook</title>
+  <meta name="author" content="Inhyeok Kim" />
+  <meta name="copyright" content="CodeBook" />
+  <meta name="description" content="Haruband&#x27;s TechBlog" />
+  <link rel="canonical" href="https://haruband.github.io/k8s-cni-routing-benchmark/" />
+  <meta name="keywords" content="Arrow, Datafusion, Kubernetes" />
+  <meta name="google-site-verification" content="Your Google Site verification code." />
+  <meta name="msvalidate.01" content="Your Bing Site verification code." />
+  <meta property="og:url" content="https://haruband.github.io/k8s-cni-routing-benchmark/" />
+  <meta name="twitter:url" content="https://haruband.github.io/k8s-cni-routing-benchmark/" />
+  <meta property="og:description" content="Haruband&#x27;s TechBlog" />
+  <meta name="twitter:description" content="Haruband&#x27;s TechBlog" />
+  <meta property="og:title" content="[K8S&#x2F;Cilium] 라우팅 기법 성능 평가 | CodeBook" />
+  <meta name="twitter:title" content="[K8S&#x2F;Cilium] 라우팅 기법 성능 평가 | CodeBook" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:site_name" content="CodeBook" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:type" content="website" />
+  <meta property="og:updated_time" content="2020-10-19" />
+  <meta name="twitter:site" content="@your-user-name" />
+  <meta name="twitter:creator" content="@your-user-name" />
+  <script defer src="https://haruband.github.io/js/abridge.min.js?h=e0f9a881a665c86cce9c" integrity="sha384-QF67y7RnPkuDrJNQqn3/7nYxqxWkW/qHI7zN0WTES1aXbf+TotoByRBb835fUE6U"></script>
+  <noscript><link rel="stylesheet" href="https://haruband.github.io/nojs.css" /></noscript>
+</head>
+<body>
+  <header>
+    <nav>
+      <div><big><a href="https://haruband.github.io" title="CodeBook">CodeBook</a></big></div>
+      <div>
+
+        <div>
+          <ul><li><a class="s110" href="https://haruband.github.io/archive/"> Posts </a></li><li><a class="s110" href="https://haruband.github.io/tags/"> Tags </a></li><li><i type="reset" id="mode" class="js svgs adjust"></i></ul>
+        </div>
+
+        <div>
+          <div>
+            <form autocomplete=off class="js" name="goSearch" id="searchbox">
+              <div class="searchd">
+                <input id="searchinput" type="text" placeholder="Search" title="Search" />
+                <button type="submit" title="Search" class="svgs svgm search"></button>
+              </div>
+              <div class="results"><div id="suggestions"></div></div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </nav>
+  </header>
+  <main>
+    <article>
+      <h1><a href="https://haruband.github.io/k8s-cni-routing-benchmark/">[K8S&#x2F;Cilium] 라우팅 기법 성능 평가</a></h1>
+
+      <span class="s95"> Inhyeok Kim <span class="rpad"></span> October 19, 2020 <span class="rpad"></span>Updated: October 19, 2020 <span class="rpad"></span> #<a href="https://haruband.github.io/tags/k8s/">K8S</a>  #<a href="https://haruband.github.io/tags/kubernetes/">Kubernetes</a>  #<a href="https://haruband.github.io/tags/cilium/">Cilium</a> </span>
+
+    
+        <div class="block">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/cilium/">Cilium (Series)</a><br>
+            <a href="https://haruband.github.io/k8s-cni-vxlan/">[K8S&#x2F;Cilium] VXLAN 기반 Tunneling Datapath 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-ipvlan/">[K8S&#x2F;Cilium] IPVLAN 기반 Routing Datapath 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-service/">[K8S&#x2F;Cilium] ClusterIP 서비스</a><br>
+            <a href="https://haruband.github.io/k8s-cni-nodeport/">[K8S&#x2F;Cilium] NodePort 서비스</a><br>
+            <a href="https://haruband.github.io/k8s-cni-dsr/">[K8S&#x2F;Cilium] DSR (Direct Server Return)</a><br>
+            <a href="https://haruband.github.io/k8s-cni-redirect/">[K8S&#x2F;Cilium] bpf_redirect_peer()&#x2F;bpf_redirect_neigh()</a><br>
+            <a class="scur" href="https://haruband.github.io/k8s-cni-routing-benchmark/">[K8S&#x2F;Cilium] 라우팅 기법 성능 평가</a><br> 
+          
+            <a href="https://haruband.github.io/k8s-cni-ipvlan-redirect-bug/">[K8S&#x2F;Cilium] IPVLAN 기반 Cilium 의 NodePort 버그 분석</a><br>
+            <a href="https://haruband.github.io/k8s-cni-loadbalancing/">[K8S&#x2F;Cilium] Socket-Based LoadBalancing 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-servicemesh-proxy/">[K8S&#x2F;Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy)</a><br>
+            <a href="https://haruband.github.io/k8s-vxlan-forbidden/">[K8S] VXLAN 사용 불가 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-kafka-optimize-loadbalancer/">[K8S] 네트워크 최적화 (MetalLB)</a><br>
+            <a href="https://haruband.github.io/k8s-proxy-bypass/">[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-cgroupv2-privatens/">[K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-rpfilter/">[K8S] Cilium RPFilter 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-networkpolicy/">[K8S] Cilium NetworkPolicy 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh-cilium/">[K8S&#x2F;Istio] AmbientMesh Cilium 문제 분석</a><br>
+      </div>
+    </div>
+
+
+<p>쿠버네티스의 CNI 에서 성능에 가장 큰 영향을 미치는 것은 다음 두 가지이다.</p>
+<ul>
+<li>eBPF 를 사용하느냐, 아니면 IPTables (IPVS) 를 사용하느냐?</li>
+<li>Direct Routing 을 사용하느냐, 아니면 Tunneling 을 사용하느냐?</li>
+</ul>
+<p>Cilium 과 가장 대표적인 CNI 인 Calico 를 이용하여 어느 정도의 성능 차이가 나는지 살펴보자. Cilium 은 기본적으로 eBPF 를 사용하고 있고, Calico 는 최근에 eBPF 지원 기능을 추가하였다.</p>
+<p>첫 번째 실험은 아파치 벤치마크(AB)를 이용하여 진행하였고, 로컬 파드는 NGINX 파드와 동일한 노드에서 벤치마크를 실행한 경우이고, 리모트 파드는 다른 노드에서 벤치마크를 실행한 경우이다. (실험에 소요된 시간이므로 낮을수록 좋은 결과이다.)</p>
+<p><img src="https://haruband.github.io/k8s-cni-routing-benchmark/./routing.benchmark.png" alt="routing.benchmark" /></p>
+<p>로컬 파드는 같은 노드 안에서만 패킷을 전달하기 때문에 전체적으로 유사한 성능을 보이지만, IPTables 기반의 Calico 는 20~30% 정도 느린 성능을 보이고 있다. 리모트 파드는 eBPF + Direct Routing 을 사용하는 경우가 가장 좋은 성능을 보이고 있다. Cilium 의 경우 VXLAN 기반 터널링보다 20% 정도 좋은 성능을 보이고 있고, Calico 는 IPTables + VXLAN 기반 터널링보다 22% 정도 좋은 성능을 보이고 있다. 그리고 IPTables 를 사용할 때는 룰의 개수가 많아질수록 더 나쁜 성능을 보이기 때문에 Cilium 을 사용하거나, Calico 를 사용하는 경우에도 eBPF 를 사용하는 것이 좋을 것이다. 또한, 모든 노드가 같은 서브넷에 있을때는 Direct Routing 을 사용하는 것이 유리하고, Calico 는 같은 서브넷에 있는 노드끼리는 Direct Routing 을, 다른 서브넷에 있는 노드끼리는 터널링 기법을 자동으로 적용하는 CrossSubnet 기능을 제공하고 있다.</p>
+<p>두 번째 실험에서는 Cilium 에서 DSR(Direct Server Return)을 적용하는 경우 어느 정도의 성능 차이가 나는지 살펴보자. 실험은 외부 클라이언트에서 NodePort 로 접근해서 HTTP 요청을 처리하는데 소요되는 시간의 P99 값을 측정하였다. (k6.js 를 이용하여 실험하였다.)</p>
+<table><thead><tr><th style="text-align: left">datapath</th><th style="text-align: left">target</th><th style="text-align: left">DSR</th><th style="text-align: right">http_req_duration (msecs)</th></tr></thead><tbody>
+<tr><td style="text-align: left">direct</td><td style="text-align: left">local</td><td style="text-align: left">X</td><td style="text-align: right">0.554</td></tr>
+<tr><td style="text-align: left">direct</td><td style="text-align: left">remote</td><td style="text-align: left">X</td><td style="text-align: right">0.818</td></tr>
+<tr><td style="text-align: left">direct</td><td style="text-align: left">remote</td><td style="text-align: left">O</td><td style="text-align: right">0.650</td></tr>
+<tr><td style="text-align: left">vxlan</td><td style="text-align: left">local</td><td style="text-align: left">X</td><td style="text-align: right">0.542</td></tr>
+<tr><td style="text-align: left">vxlan</td><td style="text-align: left">remote</td><td style="text-align: left">X</td><td style="text-align: right">1.896</td></tr>
+<tr><td style="text-align: left">vxlan</td><td style="text-align: left">remote</td><td style="text-align: left">O</td><td style="text-align: right">1.263</td></tr>
+</tbody></table>
+<p>NodePort 로 접근한 노드에 NGINX 파드가 있는 경우(local)는 0.55 msecs 내외의 시간이 소요된다. NodePort 로 접근한 노드와 다른 노드에 NGINX 파드가 있는 경우(remote)는 Direct Routing 은 0.818 msecs 가 소요되고, VXLAN 기반 터널링은 1.896 msecs 가 소요되지만, DSR 을 적용하는 경우 각각 25%(0.650 msecs)와 40%(1.263 msecs) 정도의 성능이 개선된다. 그리고 DSR 을 적용하면 응답 패킷을 다른 노드를 거치지 않고 외부 클라이언트로 바로 전송하기 때문에 클러스터 내부의 네트워크 트래픽을 줄이는 효과도 볼 수 있다.</p>
+
+      <nav>
+        <div>
+          <a href="https://haruband.github.io/k8s-cni-ipvlan-redirect-bug/">&#8249; [K8S&#x2F;Cilium] IPVLAN 기반 Cilium 의 NodePort 버그 분석</a>
+        </div>
+        <div>
+          <a href="https://haruband.github.io/k8s-cni-redirect/"> [K8S&#x2F;Cilium] bpf_redirect_peer()&#x2F;bpf_redirect_neigh() &#8250;</a>
+        </div>
+      </nav>
+    </article>
+
+    <div class="sblock">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/cilium/">Series</a><br>
+
+          
+          
+      <a href="https://haruband.github.io/k8s-cni-vxlan/">[K8S&#x2F;Cilium] VXLAN 기반 Tunneling Datapath 기법</a><br>
+
+          
+            <details>
+              <summary>More...</summary>
+            </details>
+            <div class="hidden_li">
+                <a href="https://haruband.github.io/k8s-cni-ipvlan/">[K8S&#x2F;Cilium] IPVLAN 기반 Routing Datapath 기법</a><br>
+                <a href="https://haruband.github.io/k8s-cni-service/">[K8S&#x2F;Cilium] ClusterIP 서비스</a><br>
+                <a href="https://haruband.github.io/k8s-cni-nodeport/">[K8S&#x2F;Cilium] NodePort 서비스</a><br>
+            </div>
+
+          
+
+          
+            <a href="https://haruband.github.io/k8s-cni-dsr/">[K8S&#x2F;Cilium] DSR (Direct Server Return)</a><br>
+            <a href="https://haruband.github.io/k8s-cni-redirect/">[K8S&#x2F;Cilium] bpf_redirect_peer()&#x2F;bpf_redirect_neigh()</a><br>
+
+          
+            
+      <a class="scur" href="https://haruband.github.io/k8s-cni-routing-benchmark/">[K8S&#x2F;Cilium] 라우팅 기법 성능 평가</a><br>
+    
+
+          
+            <a href="https://haruband.github.io/k8s-cni-ipvlan-redirect-bug/">[K8S&#x2F;Cilium] IPVLAN 기반 Cilium 의 NodePort 버그 분석</a><br>
+          
+            <a href="https://haruband.github.io/k8s-cni-loadbalancing/">[K8S&#x2F;Cilium] Socket-Based LoadBalancing 기법</a><br>
+          
+            <details>
+              <summary>More...</summary>
+            </details>
+            <div class="hidden_li">
+                <a href="https://haruband.github.io/k8s-cni-servicemesh-proxy/">[K8S&#x2F;Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy)</a><br>
+                <a href="https://haruband.github.io/k8s-vxlan-forbidden/">[K8S] VXLAN 사용 불가 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-kafka-optimize-loadbalancer/">[K8S] 네트워크 최적화 (MetalLB)</a><br>
+                <a href="https://haruband.github.io/k8s-proxy-bypass/">[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-cgroupv2-privatens/">[K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-rpfilter/">[K8S] Cilium RPFilter 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-networkpolicy/">[K8S] Cilium NetworkPolicy 문제 분석</a><br>
+            </div>
+        
+      <a href="https://haruband.github.io/k8s-istio-ambientmesh-cilium/">[K8S&#x2F;Istio] AmbientMesh Cilium 문제 분석</a><br>
+
+        
+      </div>
+  </main>
+  <footer>
+    <div class="c">
+      <nav class="tpad"><div><a href="https://www.linkedin.com/in/inhyeok-kim-7620a0b0/" target="_blank" title="LinkedIn"><i type="Button" class="svg linkedin" title="LinkedIn"></i></a><a href="https://github.com/haruband/" target="_blank" title="Github"><i type="Button" class="svg github" title="Github"></i></a></div></nav>
+      <nav class="vpad">
+        <a class="rpad s90" href="https://haruband.github.io/about/"> About </a>
+        <a class="rpad s90" href="https://haruband.github.io/contact/"> Contact </a>
+      </nav>
+      <p class="s80"> &copy; <span id="year">2025</span> CodeBook</p>
+      <p class="s80">Powered by <a href="https://www.getzola.org/" target="_blank">Zola</a> & <a href="https://github.com/jieiku/abridge/" target="_blank">Abridge</a></p>
+    </div>
+  </footer>
+</body>
+</html>

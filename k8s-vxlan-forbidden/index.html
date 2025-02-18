@@ -1,0 +1,255 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://haruband.github.io/js/theme.min.js" integrity="sha384-pb++s6uBRKaQv+iAXpgA/H3IlpLZdO14tTwuCI7uXmz4aaZdByoCcM+6BhynMq/1"></script>
+  <link rel="stylesheet" href="https://haruband.github.io/abridge.css?h=98ebdf6fd3d59dfb2edf" />
+  <meta charset="utf-8" />
+  <meta http-equiv="x-ua-compatible" content="ie=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="base" content="https://haruband.github.io" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#333333" />
+  <meta name="msapplication-TileColor" content="#333333" />
+  <link rel="manifest" href="https://haruband.github.io/manifest.min.json" />
+  <link rel="mask-icon" href="https://haruband.github.io/safari-pinned-tab.svg" color="#ff9900" />
+  <link rel="icon" type="image/svg+xml" href="https://haruband.github.io/favicon.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="https://haruband.github.io/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="https://haruband.github.io/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="https://haruband.github.io/favicon-16x16.png" />
+  <link rel="alternate" type="application/atom+xml" title="CodeBook Atom Feed" href="https://haruband.github.io/atom.xml" />
+  <meta name="robots" content="index, follow" />
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <title>[K8S] VXLAN 사용 불가 문제 분석 | CodeBook</title>
+  <meta name="author" content="Inhyeok Kim" />
+  <meta name="copyright" content="CodeBook" />
+  <meta name="description" content="Haruband&#x27;s TechBlog" />
+  <link rel="canonical" href="https://haruband.github.io/k8s-vxlan-forbidden/" />
+  <meta name="keywords" content="Arrow, Datafusion, Kubernetes" />
+  <meta name="google-site-verification" content="Your Google Site verification code." />
+  <meta name="msvalidate.01" content="Your Bing Site verification code." />
+  <meta property="og:url" content="https://haruband.github.io/k8s-vxlan-forbidden/" />
+  <meta name="twitter:url" content="https://haruband.github.io/k8s-vxlan-forbidden/" />
+  <meta property="og:description" content="Haruband&#x27;s TechBlog" />
+  <meta name="twitter:description" content="Haruband&#x27;s TechBlog" />
+  <meta property="og:title" content="[K8S] VXLAN 사용 불가 문제 분석 | CodeBook" />
+  <meta name="twitter:title" content="[K8S] VXLAN 사용 불가 문제 분석 | CodeBook" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:site_name" content="CodeBook" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:type" content="website" />
+  <meta property="og:updated_time" content="2021-03-12" />
+  <meta name="twitter:site" content="@your-user-name" />
+  <meta name="twitter:creator" content="@your-user-name" />
+  <script defer src="https://haruband.github.io/js/abridge.min.js?h=e0f9a881a665c86cce9c" integrity="sha384-QF67y7RnPkuDrJNQqn3/7nYxqxWkW/qHI7zN0WTES1aXbf+TotoByRBb835fUE6U"></script>
+  <noscript><link rel="stylesheet" href="https://haruband.github.io/nojs.css" /></noscript>
+</head>
+<body>
+  <header>
+    <nav>
+      <div><big><a href="https://haruband.github.io" title="CodeBook">CodeBook</a></big></div>
+      <div>
+
+        <div>
+          <ul><li><a class="s110" href="https://haruband.github.io/archive/"> Posts </a></li><li><a class="s110" href="https://haruband.github.io/tags/"> Tags </a></li><li><i type="reset" id="mode" class="js svgs adjust"></i></ul>
+        </div>
+
+        <div>
+          <div>
+            <form autocomplete=off class="js" name="goSearch" id="searchbox">
+              <div class="searchd">
+                <input id="searchinput" type="text" placeholder="Search" title="Search" />
+                <button type="submit" title="Search" class="svgs svgm search"></button>
+              </div>
+              <div class="results"><div id="suggestions"></div></div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </nav>
+  </header>
+  <main>
+    <article>
+      <h1><a href="https://haruband.github.io/k8s-vxlan-forbidden/">[K8S] VXLAN 사용 불가 문제 분석</a></h1>
+
+      <span class="s95"> Inhyeok Kim <span class="rpad"></span> March 12, 2021 <span class="rpad"></span>Updated: March 12, 2021 <span class="rpad"></span> #<a href="https://haruband.github.io/tags/k8s/">K8S</a>  #<a href="https://haruband.github.io/tags/kubernetes/">Kubernetes</a>  #<a href="https://haruband.github.io/tags/cilium/">Cilium</a> </span>
+
+    
+        <div class="block">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/k8s/">K8S (Series)</a><br>
+            <a href="https://haruband.github.io/k8s-cni-vxlan/">[K8S&#x2F;Cilium] VXLAN 기반 Tunneling Datapath 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-ipvlan/">[K8S&#x2F;Cilium] IPVLAN 기반 Routing Datapath 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-service/">[K8S&#x2F;Cilium] ClusterIP 서비스</a><br>
+            <a href="https://haruband.github.io/k8s-cni-nodeport/">[K8S&#x2F;Cilium] NodePort 서비스</a><br>
+            <a href="https://haruband.github.io/k8s-cni-dsr/">[K8S&#x2F;Cilium] DSR (Direct Server Return)</a><br>
+            <a href="https://haruband.github.io/k8s-cni-redirect/">[K8S&#x2F;Cilium] bpf_redirect_peer()&#x2F;bpf_redirect_neigh()</a><br>
+            <a href="https://haruband.github.io/k8s-cni-routing-benchmark/">[K8S&#x2F;Cilium] 라우팅 기법 성능 평가</a><br>
+            <a href="https://haruband.github.io/k8s-cni-ipvlan-redirect-bug/">[K8S&#x2F;Cilium] IPVLAN 기반 Cilium 의 NodePort 버그 분석</a><br>
+            <a href="https://haruband.github.io/k8s-cni-loadbalancing/">[K8S&#x2F;Cilium] Socket-Based LoadBalancing 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-servicemesh-proxy/">[K8S&#x2F;Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy)</a><br>
+            <a class="scur" href="https://haruband.github.io/k8s-vxlan-forbidden/">[K8S] VXLAN 사용 불가 문제 분석</a><br> 
+          
+            <a href="https://haruband.github.io/k8s-nat-loopback-snat/">[K8S] NAT 루프백 문제 분석 (SNAT)</a><br>
+            <a href="https://haruband.github.io/k8s-kafka-optimize-loadbalancer/">[K8S] 네트워크 최적화 (MetalLB)</a><br>
+            <a href="https://haruband.github.io/k8s-proxy-bypass/">[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-memory-swap/">[K8S] 메모리 스와핑 지원 분석</a><br>
+            <a href="https://haruband.github.io/k8s-nat-loopback-lrp/">[K8S] NAT 루프백 문제 분석 (LRP)</a><br>
+            <a href="https://haruband.github.io/k8s-cgroupv2-privatens/">[K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-rpfilter/">[K8S] Cilium RPFilter 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-qos-memory/">[K8S] 메모리 QoS 지원 분석</a><br>
+            <a href="https://haruband.github.io/k8s-networkpolicy/">[K8S] Cilium NetworkPolicy 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-spark-optimize/">[K8S&#x2F;Spark] 성능 최적화</a><br>
+            <a href="https://haruband.github.io/k8s-spark-optimize-swap/">[K8S&#x2F;Spark] 메모리 최적화 (Swap)</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh/">[K8S&#x2F;Istio] AmbientMesh 소개</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh-flow/">[K8S&#x2F;Istio] AmbientMesh 동작 과정 분석</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh-rpfilter/">[K8S&#x2F;Istio] AmbientMesh RPFilter 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh-cilium/">[K8S&#x2F;Istio] AmbientMesh Cilium 문제 분석</a><br>
+      </div>
+    </div>
+
+
+<p>오늘은 VMWare 기반의 IaaS 를 이용하여 쿠버네티스 클러스터를 구축하던 중 발생했던 문제를 파악하고 해결했던 과정을 간단히 소개해보고자 한다. 해당 문제와 유사한 문제가 다행히(?) AWS EC2 에서도 발생하여 EC2 를 기준으로 설명하도록 하겠다.</p>
+<h2 id="eoddeohan-munjega-balsaenghaessneunga">어떠한 문제가 발생했는가???</h2>
+<p>우리는 AWS 와 GCP 를 사용할때는 주로 매니지드 쿠버네티스 서비스를 활용하지만, 그렇지 않은 경우에는 kubespray 를 이용하여 쿠버네티스를 설치하고, kustomization 을 기반으로 개발한 IaC(InfrastructureAsCode)를 이용하여 서비스를 배포한다. 그리고 CNI 는 개인적으로 문제 분석과 해결이 용이한 Cilium 을 주로 사용하고 있다.</p>
+<p>일단 상황은 이렇다. 회사 내부에서 딥러닝/빅데이터 클러스터에서 꾸준히 사용해오던 쿠버네티스를 동일한 방식으로 EC2 에 설치했는데 이상한 현상이 발생했다. <strong>처음 접했던 현상은 서비스 디스커버리가 잘(?) 되지 않는 문제였다.</strong> 그래서 kibana 와 mongos 같이 서비스 디스커버리를 이용하여 다른 파드에 접근하는 서비스들만 정상적인 동작을 하지 않았다. 이와 같은 현상의 원인을 파악하기 위해 일단은 서비스 디스커버리 쪽을 살펴보기로 했다.</p>
+<p>원인 분석을 위해 클러스터 내부에 jupyterlab 을 설치하고 dig 를 이용하여 서비스 디스커버리가 잘 동작하는지 확인해보았다. nodelocaldns 를 사용 중이고, coredns 는 기본적으로 2개의 파드가 동작 중이다. 일단 nodelocaldns 쪽은 문제가 없다고 판단하여 바로 coredns 서비스로 dig 를 이용하여 질의를 해보았다. 동일한 도메인을 반복적으로 질의해보니 성공과 실패를 반복하는 이상한 현상이 발견되었다. 그래서 이번에는 두 개의 파드(coredns)로 각각 직접 질의를 해보았다. <strong>놀랍게도 하나의 파드는 항상 성공했지만, 다른 하나의 파드는 항상 실패했다.</strong></p>
+<p>두 개의 파드는 하나의 coredns 디플로이먼트로 배포된 완전히 동일한 파드인데 왜 이런 문제가 발생한 것일까? 사실은 두 개의 파드가 완전히 동일한 상황은 아니다. 왜냐하면 두 개의 파드가 서로 다른 노드에 존재하고, 둘 중 하나의 노드에만 jupyterlab 이 존재하기 때문이다. jupyterlab 에서 동일한 방식으로 각각의 파드에 질의를 보냈지만, 결과적으로는 하나의 파드는 같은 노드에 있어서 로컬 통신으로 요청이 잘 처리되었고, 다른 파드는 다른 노드에 있어서 외부 통신을 하던 중 문제가 발생했던 것이다. <strong>즉, 해당 문제는 우리가 처음 접했던 서비스 디스커버리의 문제가 아니고, 네트워킹의 문제였다.</strong></p>
+<h2 id="eoddeohge-munjega-balsaenghaessneunga">어떻게 문제가 발생했는가???</h2>
+<p>우선 쿠버네티스에서 실제 통신을 처리하는 CNI 를 살펴보았다. 우리는 CNI 로 Cilium 을 사용 중이기 때문에 관련 정보들이 정확히 구성되어있는지 분석해보았다.</p>
+<pre class="z-code"><code><span class="z-text z-plain">$ kubectl get services -n kube-system
+</span><span class="z-text z-plain">NAME             TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                  AGE
+</span><span class="z-text z-plain">coredns          ClusterIP   10.233.0.3      &lt;none&gt;        53/UDP,53/TCP,9153/TCP   3h14m
+</span><span class="z-text z-plain">...
+</span><span class="z-text z-plain">$ kubectl get pods -l k8s-app=kube-dns -o wide -n kube-system
+</span><span class="z-text z-plain">NAME                       READY   STATUS    RESTARTS   AGE     IP              NODE    NOMINATED NODE   READINESS GATES
+</span><span class="z-text z-plain">coredns-8474476ff8-d7pjv   1/1     Running   0          3h14m   10.233.64.125   node1   &lt;none&gt;           &lt;none&gt;
+</span><span class="z-text z-plain">coredns-8474476ff8-nz2tt   1/1     Running   0          3h13m   10.233.65.250   node2   &lt;none&gt;           &lt;none&gt;
+</span><span class="z-text z-plain">cilium(node1) $ cilium service list
+</span><span class="z-text z-plain">ID   Frontend            Service Type   Backend
+</span><span class="z-text z-plain">...
+</span><span class="z-text z-plain">2    10.233.0.3:53       ClusterIP      1 =&gt; 10.233.64.125:53
+</span><span class="z-text z-plain">                                        2 =&gt; 10.233.65.250:53
+</span><span class="z-text z-plain">...
+</span></code></pre>
+<p>Cilium 의 2번 서비스를 보면 기본적인 coredns 서비스와 엔드포인트가 정확히 설정되어있는 것을 확인할 수 있다. 다음으로 노드 간 통신을 위해 VXLAN 을 사용 중이기 때문에 아래와 같이 터널링 정보도 확인해보았다.</p>
+<pre class="z-code"><code><span class="z-text z-plain">cilium(node1) $ cilium bpf tunnel list
+</span><span class="z-text z-plain">TUNNEL          VALUE
+</span><span class="z-text z-plain">10.233.65.0:0   172.26.50.201:0
+</span></code></pre>
+<p>여기까지 살펴본 바로는 설정에는 아무런 문제가 없었다. 그럼 이제 실제 통신이 제대로 이루어지는지를 살펴보자. 확인을 위해 node1 에 존재하는 jupyterlab 에서 node2 에 있는 파(coredns)로 dig 를 이용하여 질의를 보낼때 node1 과 node2 에서 tcpdump 로 VXLAN 이 사용 중인 8472 UDP 포트를 모니터링하였다. 예상대로 node1 에서는 패킷을 전송하지만, node2 에서 해당 패킷을 수신하지 못했다. 몇 가지를 확인한 결과 AWS EC2 의 보안 그룹 설정에서 모든 UDP 를 막아두고 있었다. <strong>그래서 해당 문제의 원인은 AWS EC2 보안 그룹에서 UDP 를 막아두어서 UDP 를 사용하는 VXLAN 터널링이 제대로 작동하지 않았던 것이다.</strong></p>
+<p>참고로, VXLAN 기반의 터널링을 사용하는 경우, 앱에서 TCP 를 사용하더라도 다른 노드로 패킷을 전달할 때는 IP/UDP 로 한번 더 포장을 해서 전송하기 때문에 실제 노드 간 통신은 UDP 로 이루어진다.</p>
+<h2 id="eoddeohge-munjereul-haegyeolhaessneunga">어떻게 문제를 해결했는가???</h2>
+<p>해당 문제를 해결할 수 있는 방법은 두 가지 정도이다.</p>
+<ol>
+<li>AWS EC2 보안 그룹 설정 변경</li>
+<li>VXLAN 대신 다이렉트 라우팅 기법 사용</li>
+</ol>
+<p>첫 번째 해결책이 간단하지만, 노드의 수가 많지 않고 모든 노드가 하나의 서브넷 안에 있다면 VXLAN 을 사용하지 않고 다이렉트 라우팅 기법을 사용하는 것이 더 나은 해결책일 것이다.</p>
+
+      <nav>
+        <div>
+          <a href="https://haruband.github.io/k8s-nat-loopback-snat/">&#8249; [K8S] NAT 루프백 문제 분석 (SNAT)</a>
+        </div>
+        <div>
+          <a href="https://haruband.github.io/k8s-cni-servicemesh-proxy/"> [K8S&#x2F;Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy) &#8250;</a>
+        </div>
+      </nav>
+    </article>
+
+    <div class="sblock">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/k8s/">Series</a><br>
+
+          
+          
+      <a href="https://haruband.github.io/k8s-cni-vxlan/">[K8S&#x2F;Cilium] VXLAN 기반 Tunneling Datapath 기법</a><br>
+
+          
+            <details>
+              <summary>More...</summary>
+            </details>
+            <div class="hidden_li">
+                <a href="https://haruband.github.io/k8s-cni-ipvlan/">[K8S&#x2F;Cilium] IPVLAN 기반 Routing Datapath 기법</a><br>
+                <a href="https://haruband.github.io/k8s-cni-service/">[K8S&#x2F;Cilium] ClusterIP 서비스</a><br>
+                <a href="https://haruband.github.io/k8s-cni-nodeport/">[K8S&#x2F;Cilium] NodePort 서비스</a><br>
+                <a href="https://haruband.github.io/k8s-cni-dsr/">[K8S&#x2F;Cilium] DSR (Direct Server Return)</a><br>
+                <a href="https://haruband.github.io/k8s-cni-redirect/">[K8S&#x2F;Cilium] bpf_redirect_peer()&#x2F;bpf_redirect_neigh()</a><br>
+                <a href="https://haruband.github.io/k8s-cni-routing-benchmark/">[K8S&#x2F;Cilium] 라우팅 기법 성능 평가</a><br>
+                <a href="https://haruband.github.io/k8s-cni-ipvlan-redirect-bug/">[K8S&#x2F;Cilium] IPVLAN 기반 Cilium 의 NodePort 버그 분석</a><br>
+            </div>
+
+          
+
+          
+            <a href="https://haruband.github.io/k8s-cni-loadbalancing/">[K8S&#x2F;Cilium] Socket-Based LoadBalancing 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-servicemesh-proxy/">[K8S&#x2F;Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy)</a><br>
+
+          
+            
+      <a class="scur" href="https://haruband.github.io/k8s-vxlan-forbidden/">[K8S] VXLAN 사용 불가 문제 분석</a><br>
+    
+
+          
+            <a href="https://haruband.github.io/k8s-nat-loopback-snat/">[K8S] NAT 루프백 문제 분석 (SNAT)</a><br>
+          
+            <a href="https://haruband.github.io/k8s-kafka-optimize-loadbalancer/">[K8S] 네트워크 최적화 (MetalLB)</a><br>
+          
+            <details>
+              <summary>More...</summary>
+            </details>
+            <div class="hidden_li">
+                <a href="https://haruband.github.io/k8s-proxy-bypass/">[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-memory-swap/">[K8S] 메모리 스와핑 지원 분석</a><br>
+                <a href="https://haruband.github.io/k8s-nat-loopback-lrp/">[K8S] NAT 루프백 문제 분석 (LRP)</a><br>
+                <a href="https://haruband.github.io/k8s-cgroupv2-privatens/">[K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-rpfilter/">[K8S] Cilium RPFilter 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-qos-memory/">[K8S] 메모리 QoS 지원 분석</a><br>
+                <a href="https://haruband.github.io/k8s-networkpolicy/">[K8S] Cilium NetworkPolicy 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-spark-optimize/">[K8S&#x2F;Spark] 성능 최적화</a><br>
+                <a href="https://haruband.github.io/k8s-spark-optimize-swap/">[K8S&#x2F;Spark] 메모리 최적화 (Swap)</a><br>
+                <a href="https://haruband.github.io/k8s-istio-ambientmesh/">[K8S&#x2F;Istio] AmbientMesh 소개</a><br>
+                <a href="https://haruband.github.io/k8s-istio-ambientmesh-flow/">[K8S&#x2F;Istio] AmbientMesh 동작 과정 분석</a><br>
+                <a href="https://haruband.github.io/k8s-istio-ambientmesh-rpfilter/">[K8S&#x2F;Istio] AmbientMesh RPFilter 문제 분석</a><br>
+            </div>
+        
+      <a href="https://haruband.github.io/k8s-istio-ambientmesh-cilium/">[K8S&#x2F;Istio] AmbientMesh Cilium 문제 분석</a><br>
+
+        
+      </div>
+      <div class="blockdiv sticky">
+        <a class="b s150" href="#">Index</a>
+        <div>
+          <a href="#eoddeohan-munjega-balsaenghaessneunga">어떠한 문제가 발생했는가???</a>
+        </div>
+        <div>
+          <a href="#eoddeohge-munjega-balsaenghaessneunga">어떻게 문제가 발생했는가???</a>
+        </div>
+        <div>
+          <a href="#eoddeohge-munjereul-haegyeolhaessneunga">어떻게 문제를 해결했는가???</a>
+        </div>
+      </div>
+    </div>
+  </main>
+  <footer>
+    <div class="c">
+      <nav class="tpad"><div><a href="https://www.linkedin.com/in/inhyeok-kim-7620a0b0/" target="_blank" title="LinkedIn"><i type="Button" class="svg linkedin" title="LinkedIn"></i></a><a href="https://github.com/haruband/" target="_blank" title="Github"><i type="Button" class="svg github" title="Github"></i></a></div></nav>
+      <nav class="vpad">
+        <a class="rpad s90" href="https://haruband.github.io/about/"> About </a>
+        <a class="rpad s90" href="https://haruband.github.io/contact/"> Contact </a>
+      </nav>
+      <p class="s80"> &copy; <span id="year">2025</span> CodeBook</p>
+      <p class="s80">Powered by <a href="https://www.getzola.org/" target="_blank">Zola</a> & <a href="https://github.com/jieiku/abridge/" target="_blank">Abridge</a></p>
+    </div>
+  </footer><span class="topout">
+<span class="topleft"> </span><a href="#" class="top" title="Back to Top"><i class="svgs svgh angu"></i></a>
+</span>
+</body>
+</html>

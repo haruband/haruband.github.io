@@ -1,0 +1,306 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://haruband.github.io/js/theme.min.js" integrity="sha384-pb++s6uBRKaQv+iAXpgA/H3IlpLZdO14tTwuCI7uXmz4aaZdByoCcM+6BhynMq/1"></script>
+  <link rel="stylesheet" href="https://haruband.github.io/abridge.css?h=98ebdf6fd3d59dfb2edf" />
+  <meta charset="utf-8" />
+  <meta http-equiv="x-ua-compatible" content="ie=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="base" content="https://haruband.github.io" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#333333" />
+  <meta name="msapplication-TileColor" content="#333333" />
+  <link rel="manifest" href="https://haruband.github.io/manifest.min.json" />
+  <link rel="mask-icon" href="https://haruband.github.io/safari-pinned-tab.svg" color="#ff9900" />
+  <link rel="icon" type="image/svg+xml" href="https://haruband.github.io/favicon.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="https://haruband.github.io/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="https://haruband.github.io/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="https://haruband.github.io/favicon-16x16.png" />
+  <link rel="alternate" type="application/atom+xml" title="CodeBook Atom Feed" href="https://haruband.github.io/atom.xml" />
+  <meta name="robots" content="index, follow" />
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <title>[K8S] 메모리 QoS 지원 분석 | CodeBook</title>
+  <meta name="author" content="Inhyeok Kim" />
+  <meta name="copyright" content="CodeBook" />
+  <meta name="description" content="Haruband&#x27;s TechBlog" />
+  <link rel="canonical" href="https://haruband.github.io/k8s-qos-memory/" />
+  <meta name="keywords" content="Arrow, Datafusion, Kubernetes" />
+  <meta name="google-site-verification" content="Your Google Site verification code." />
+  <meta name="msvalidate.01" content="Your Bing Site verification code." />
+  <meta property="og:url" content="https://haruband.github.io/k8s-qos-memory/" />
+  <meta name="twitter:url" content="https://haruband.github.io/k8s-qos-memory/" />
+  <meta property="og:description" content="Haruband&#x27;s TechBlog" />
+  <meta name="twitter:description" content="Haruband&#x27;s TechBlog" />
+  <meta property="og:title" content="[K8S] 메모리 QoS 지원 분석 | CodeBook" />
+  <meta name="twitter:title" content="[K8S] 메모리 QoS 지원 분석 | CodeBook" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:site_name" content="CodeBook" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:type" content="website" />
+  <meta property="og:updated_time" content="2021-04-22" />
+  <meta name="twitter:site" content="@your-user-name" />
+  <meta name="twitter:creator" content="@your-user-name" />
+  <script defer src="https://haruband.github.io/js/abridge.min.js?h=e0f9a881a665c86cce9c" integrity="sha384-QF67y7RnPkuDrJNQqn3/7nYxqxWkW/qHI7zN0WTES1aXbf+TotoByRBb835fUE6U"></script>
+  <noscript><link rel="stylesheet" href="https://haruband.github.io/nojs.css" /></noscript>
+</head>
+<body>
+  <header>
+    <nav>
+      <div><big><a href="https://haruband.github.io" title="CodeBook">CodeBook</a></big></div>
+      <div>
+
+        <div>
+          <ul><li><a class="s110" href="https://haruband.github.io/archive/"> Posts </a></li><li><a class="s110" href="https://haruband.github.io/tags/"> Tags </a></li><li><i type="reset" id="mode" class="js svgs adjust"></i></ul>
+        </div>
+
+        <div>
+          <div>
+            <form autocomplete=off class="js" name="goSearch" id="searchbox">
+              <div class="searchd">
+                <input id="searchinput" type="text" placeholder="Search" title="Search" />
+                <button type="submit" title="Search" class="svgs svgm search"></button>
+              </div>
+              <div class="results"><div id="suggestions"></div></div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </nav>
+  </header>
+  <main>
+    <article>
+      <h1><a href="https://haruband.github.io/k8s-qos-memory/">[K8S] 메모리 QoS 지원 분석</a></h1>
+
+      <span class="s95"> Inhyeok Kim <span class="rpad"></span> April 22, 2021 <span class="rpad"></span>Updated: April 22, 2021 <span class="rpad"></span> #<a href="https://haruband.github.io/tags/k8s/">K8S</a>  #<a href="https://haruband.github.io/tags/kubernetes/">Kubernetes</a> </span>
+
+    
+        <div class="block">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/k8s/">K8S (Series)</a><br>
+            <a href="https://haruband.github.io/k8s-cni-vxlan/">[K8S&#x2F;Cilium] VXLAN 기반 Tunneling Datapath 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-ipvlan/">[K8S&#x2F;Cilium] IPVLAN 기반 Routing Datapath 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-service/">[K8S&#x2F;Cilium] ClusterIP 서비스</a><br>
+            <a href="https://haruband.github.io/k8s-cni-nodeport/">[K8S&#x2F;Cilium] NodePort 서비스</a><br>
+            <a href="https://haruband.github.io/k8s-cni-dsr/">[K8S&#x2F;Cilium] DSR (Direct Server Return)</a><br>
+            <a href="https://haruband.github.io/k8s-cni-redirect/">[K8S&#x2F;Cilium] bpf_redirect_peer()&#x2F;bpf_redirect_neigh()</a><br>
+            <a href="https://haruband.github.io/k8s-cni-routing-benchmark/">[K8S&#x2F;Cilium] 라우팅 기법 성능 평가</a><br>
+            <a href="https://haruband.github.io/k8s-cni-ipvlan-redirect-bug/">[K8S&#x2F;Cilium] IPVLAN 기반 Cilium 의 NodePort 버그 분석</a><br>
+            <a href="https://haruband.github.io/k8s-cni-loadbalancing/">[K8S&#x2F;Cilium] Socket-Based LoadBalancing 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-servicemesh-proxy/">[K8S&#x2F;Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy)</a><br>
+            <a href="https://haruband.github.io/k8s-vxlan-forbidden/">[K8S] VXLAN 사용 불가 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-nat-loopback-snat/">[K8S] NAT 루프백 문제 분석 (SNAT)</a><br>
+            <a href="https://haruband.github.io/k8s-kafka-optimize-loadbalancer/">[K8S] 네트워크 최적화 (MetalLB)</a><br>
+            <a href="https://haruband.github.io/k8s-proxy-bypass/">[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-memory-swap/">[K8S] 메모리 스와핑 지원 분석</a><br>
+            <a href="https://haruband.github.io/k8s-nat-loopback-lrp/">[K8S] NAT 루프백 문제 분석 (LRP)</a><br>
+            <a href="https://haruband.github.io/k8s-cgroupv2-privatens/">[K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-rpfilter/">[K8S] Cilium RPFilter 문제 분석</a><br>
+            <a class="scur" href="https://haruband.github.io/k8s-qos-memory/">[K8S] 메모리 QoS 지원 분석</a><br> 
+          
+            <a href="https://haruband.github.io/k8s-networkpolicy/">[K8S] Cilium NetworkPolicy 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-spark-optimize/">[K8S&#x2F;Spark] 성능 최적화</a><br>
+            <a href="https://haruband.github.io/k8s-spark-optimize-swap/">[K8S&#x2F;Spark] 메모리 최적화 (Swap)</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh/">[K8S&#x2F;Istio] AmbientMesh 소개</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh-flow/">[K8S&#x2F;Istio] AmbientMesh 동작 과정 분석</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh-rpfilter/">[K8S&#x2F;Istio] AmbientMesh RPFilter 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh-cilium/">[K8S&#x2F;Istio] AmbientMesh Cilium 문제 분석</a><br>
+      </div>
+    </div>
+
+
+<p>쿠버네티스처럼 다양한 워크로드를 제한된 자원을 이용하여 효율적으로 실행해야하는 플랫폼에서는 QoS 의 역할과 보장이 매우 중요하다. 특히 성능에 큰 영향을 주는 메모리 관리는 무엇보다 중요하며, 최근 CGroupV2 와 스왑 지원으로 메모리 관리 기능이 점점 더 강화되고 있다. 오늘은 이러한 기능들을 이용하여 쿠버네티스가 어떻게 메모리를 관리하는지 자세히 살펴보도록 하자. (리눅스 커널이 제공하는 메모리 관리의 핵심적인 기능인 페이징과 스왑에 대해 궁금하신 분은 <a rel="noopener" target="_blank" href="https://haruband.github.io/k8s-memory-swap">관련 글</a>을 먼저 읽어보기 바란다.)</p>
+<p>QoS 의 가장 핵심적인 기능은 주어진 만큼만 자원을 사용토록 하는 것이다. 이는 CPU 같이 압축(compressible)이 쉬운 자원은 문제가 안 되지만, 메모리처럼 압축이 어려운 자원은 생각보다 고려해야 할 사항이 많다. <strong>메모리가 압축이 어려운 대표적인 이유는 1) 페이지 캐시처럼 여러 프로세스가 공유하는, 소유자가 애매한 경우가 많고, 2) 커널 메모리처럼 반환이 불가능하거나, 페이지 캐시나 익명 페이지처럼 반환이 어려운 경우가 많기 때문이다.</strong> 이러한 문제들로 인해 쿠버네티스에서 CGroupV2 와 스왑의 역할이 더욱 중요해지고 있다.</p>
+<h2 id="eoddeohge-peuroseseuga-sayonghaneun-memorireul-jehanhaneunga">어떻게 프로세스가 사용하는 메모리를 제한하는가?</h2>
+<p>쿠버네티스는 리눅스 커널이 제공하는 CGroupV2 를 이용하여 프로세스가 속해있는 CGROUP 단위로 메모리 사용량을 제한하고 있다. 리눅스 커널이 프로세스의 메모리 사용량을 제한하는 핵심적인 방법은 메모리를 할당할 때마다 사용량을 확인해서 필요하면 바로 반환하는 것이다. 아래는 페이징을 지원하는 리눅스 커널에서 페이지 폴트가 발생할 때 새로운 페이지를 할당받는 과정을 간단히 정리한 것이다. (이외에도 페이지를 할당받는 방법이 있긴 하지만, 대부분은 아래와 같은 방식으로 페이지를 할당받는다.)</p>
+<ul>
+<li>새로운 페이지를 할당받는다. (익명 페이지 혹은 페이지 캐시)</li>
+<li>프로세스가 속해있는 CGROUP 의 메모리 사용량을 확인한다.</li>
+<li>메모리 초과 사용시, 초과된 메모리를 모두 반환한다. (몇 가지 정책(LRU, swappiness, ...)에 의해 선택된 페이지를 반환한다.)</li>
+<li>메모리 반환 실패시, 해당 프로세스는 종료(OOM)된다.</li>
+</ul>
+<p>리눅스 커널에서 초과된 메모리를 반환하는 것이 쉬운 일은 아니지만, 위와 같이 굉장히 간단하고 강력한 수단으로 메모리 사용량을 제한하고 있다.</p>
+<h2 id="eoddeohge-siseutemi-sayonghaneun-memorireul-jehanhaneunga">어떻게 시스템이 사용하는 메모리를 제한하는가?</h2>
+<p>프로세스의 메모리 사용량을 아무리 잘 제한하더라도 시스템 전체의 메모리 사용량은 한도를 초과할 수 있다. <strong>그래서 이를 해결하기 위해 리눅스 커널은 1) 필요할 때마다 메모리 접근 시점을 기반으로 하는 LRU 정책을 이용하여 메모리를 반환하고, 2) 전체 메모리 사용량이 한도를 초과하면 우선순위를 계산해서 특정 프로세스 혹은 특정 CGROUP 을 종료시킨다. 또한, 쿠버네티스도 전체 메모리 사용량이 한도를 초과했을 때 자체적으로 우선순위를 계산해서 특정 파드를 종료시킨다.</strong></p>
+<h2 id="eoddeohge-peuroseseuga-sayong-jungin-memorireul-banhwanhaneunga">어떻게 프로세스가 사용 중인 메모리를 반환하는가?</h2>
+<p>프로세스가 사용 중인 메모리를 강제로 반환하는 것은 쉬운 일이 아니다. <strong>파일에 대한 빠른 접근을 위해 사용되는 페이지 캐시는 수정된 내용이 없으면 추가적인 작업없이 바로 반환할 수 있지만, 수정된 내용이 있으면 반드시 원본 파일에 해당 내용을 반영(writeback)한 후 반환할 수 있다. 스택이나 힙을 위해 사용되는 익명 페이지는 스왑 기능이 없으면 반환이 아예 불가능하며, 스왑 기능이 있으면 익명 페이지를 위한 스왑 공간을 할당받고 페이지 내용을 저장한 후 반환할 수 있다.</strong> 그리고 페이지 캐시의 수정된 내용을 반영(writeback)하거나 익명 페이지를 스왑에 저장하기 위해서는 디스크에 대한 쓰기 작업이 필요하기 때문에 예상치 못한 문제가 발생할 수도 있고, 프로세스의 메모리 사용 패턴에 따라 메모리를 반환하는 것이 성능에 큰 영향을 줄 수도 있다.</p>
+<p>간단히 몇 가지 실험을 통해 최대 메모리 사용량이 페이지 캐시와 익명 페이지에 어떤 영향을 주는지 살펴보도록 하자.</p>
+<p>우선 페이지 캐시부터 살펴보도록 하자. 아래는 1G 메모리를 사용할 수 있는 프로세스가 4G 파일을 두 번째 읽을 때의 상황이다. (페이지 캐시의 효과를 보려면 읽은 파일을 다시 읽어야 한다.)</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> cat /sys/fs/cgroups/.../memory.stat</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-variable z-other z-readwrite z-assignment z-shell">anon</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">59322368</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">file</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">1003139072</span>
+</span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> cat /sys/fs/cgroups/.../io.stat</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-variable z-other z-readwrite z-assignment z-shell">rbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">5329436672</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">5749862400</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">rios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">42989</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">350636</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">$</span></span><span class="z-meta z-function-call z-arguments z-shell"> md5sum file</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">real</span></span><span class="z-meta z-function-call z-arguments z-shell">    0m29.512s</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">user</span></span><span class="z-meta z-function-call z-arguments z-shell">    0m11.805s</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">sys</span></span><span class="z-meta z-function-call z-arguments z-shell">     0m2.344s</span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> cat /sys/fs/cgroups/.../memory.stat</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-variable z-other z-readwrite z-assignment z-shell">anon</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">59322368</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">file</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">1003167744</span>
+</span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> cat /sys/fs/cgroups/.../io.stat</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-variable z-other z-readwrite z-assignment z-shell">rbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">9624522752</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">5749862400</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">rios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">59394</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">350636</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span>
+</span></code></pre>
+<p>4G 파일을 이미 순차적으로 한번 읽었지만 1G 메모리만 사용할 수 있기 때문에 마지막에 읽은 1G 메모리만 페이지 캐시에 남아있다. 그래서 해당 파일을 다시 순차적으로 읽을 때는 파일 전체를 다시 읽을 수 밖에 없기 때문에 성능이 매우 떨어질 수 밖에 없다. 하지만, 해당 프로세스가 8G 메모리를 사용할 수 있다면 상황은 아래와 같이 많이 다를 것이다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> cat /sys/fs/cgroups/.../memory.stat</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-variable z-other z-readwrite z-assignment z-shell">anon</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">59346944</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">file</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">4297256960</span>
+</span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> cat /sys/fs/cgroups/.../io.stat</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-variable z-other z-readwrite z-assignment z-shell">rbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">4326559744</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">4294987776</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">rios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">20574</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">4135</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">$</span></span><span class="z-meta z-function-call z-arguments z-shell"> md5sum file</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">real</span></span><span class="z-meta z-function-call z-arguments z-shell">    0m6.500s</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">user</span></span><span class="z-meta z-function-call z-arguments z-shell">    0m5.949s</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">sys</span></span><span class="z-meta z-function-call z-arguments z-shell">     0m0.544s</span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> cat /sys/fs/cgroups/.../memory.stat</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-variable z-other z-readwrite z-assignment z-shell">anon</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">59346944</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">file</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">4297871360</span>
+</span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> cat /sys/fs/cgroups/.../io.stat</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-variable z-other z-readwrite z-assignment z-shell">rbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">4327174144</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">4294987776</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">rios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">20724</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">4135</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span>
+</span></code></pre>
+<p>4G 파일을 처음 읽고나면 4G 메모리가 모두 페이지 캐시에 남아있기 때문에 두번 째 읽을 때는 파일을 다시 읽을 필요가 없으므로 성능이 상대적으로 매우 좋을 수 밖에 없다.</p>
+<p>다음은 익명 페이지를 살펴보도록 하자. 아래는 스왑 기능이 없을때 1G 메모리를 사용할 수 있는 프로세스가 4G 힙을 사용할 때의 상황이다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">$</span></span><span class="z-meta z-function-call z-arguments z-shell"> stress-ng<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> --</span>vm</span> 1<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> --</span>vm-bytes</span> 4096M<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> --</span>vm-keep</span><span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> --</span>vm-hang</span> 0</span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> journalctl -k -f</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Dec</span></span><span class="z-meta z-function-call z-arguments z-shell"> 17 01:54:19 node1 kernel: Memory cgroup out of memory: Killed process 1158401 (stress-ng-vm</span><span class="z-meta z-function-call z-shell"></span>) <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">total-vm:4240664kB,</span></span><span class="z-meta z-function-call z-arguments z-shell"> anon-rss:984988kB, file-rss:768kB, shmem-rss:32kB, UID:0 pgtables:2004kB oom_score_adj:1000</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Dec</span></span><span class="z-meta z-function-call z-arguments z-shell"> 17 01:54:19 node1 kernel: oom_reaper: reaped process 1158401 (stress-ng-vm</span><span class="z-meta z-function-call z-shell"></span>)<span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">,</span></span><span class="z-meta z-function-call z-arguments z-shell"> now anon-rss:0kB, file-rss:0kB, shmem-rss:32kB</span>
+</span></code></pre>
+<p>부족한 메모리를 반환해서 사용할 수 없기 때문에 리눅스 커널에 의해 해당 프로세스는 바로 종료된다. 하지만, 스왑 기능이 있다면 상황은 아래와 같을 것이다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">$</span></span><span class="z-meta z-function-call z-arguments z-shell"> stress-ng<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> --</span>vm</span> 1<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> --</span>vm-bytes</span> 4096M<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> --</span>vm-keep</span><span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> --</span>vm-hang</span> 0</span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> cat /sys/fs/cgroups/.../io.stat</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-variable z-other z-readwrite z-assignment z-shell">rbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">18944565248</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">8100360192</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">rios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">173696</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">924488</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span>
+</span><span class="z-source z-shell z-bash"><span class="z-variable z-other z-readwrite z-assignment z-shell">rbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">18953256960</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">8375779328</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">rios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">175064</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">991729</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span>
+</span><span class="z-source z-shell z-bash"><span class="z-variable z-other z-readwrite z-assignment z-shell">rbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">18953256960</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">8481820672</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">rios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">175064</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">1017618</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span>
+</span><span class="z-source z-shell z-bash"><span class="z-variable z-other z-readwrite z-assignment z-shell">rbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">18953256960</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">8700641280</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">rios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">175064</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">1071041</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span>
+</span><span class="z-source z-shell z-bash"><span class="z-variable z-other z-readwrite z-assignment z-shell">rbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">18953256960</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">8781262848</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">rios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">175064</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">1090724</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span>
+</span><span class="z-source z-shell z-bash"><span class="z-variable z-other z-readwrite z-assignment z-shell">rbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">18953256960</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">8872636416</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">rios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">175064</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">1113032</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span>
+</span><span class="z-source z-shell z-bash"><span class="z-variable z-other z-readwrite z-assignment z-shell">rbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">18953256960</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">8979091456</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">rios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">175064</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">1139022</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span>
+</span><span class="z-source z-shell z-bash"><span class="z-variable z-other z-readwrite z-assignment z-shell">rbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">18953256960</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">9043832832</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">rios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">175064</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">1154828</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span>
+</span><span class="z-source z-shell z-bash"><span class="z-variable z-other z-readwrite z-assignment z-shell">rbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">18953256960</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">9128165376</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">rios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">175064</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">wios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">1175417</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dbytes</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">dios</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span>
+</span></code></pre>
+<p>메모리가 부족할 때마다 익명 페이지를 반환해서 사용하기 때문에 프로세스가 종료되진 않지만, 스왑 공간에 대한 디스크 쓰기 작업이 꾸준히 발생하는 것을 볼 수 있다.</p>
+<h2 id="seuwab-gineungi-bandeusi-pilyohanga">스왑 기능이 반드시 필요한가?</h2>
+<p>스왑 기능이 없다면, 반복적으로 사용되지 않는 스택이나 힙이 많을때는 프로세스가 종료될 때까지 많은 메모리가 낭비될 수 있고, 프로세스가 사용하는 스택이나 힙의 크기를 예측하기 힘들때는 예상치 못하게 프로세스가 종료될 수 있다. 그래서 모든 프로세스가 스왑 기능이 필요한 것은 아니지만, 스왑이 반드시 필요한 프로세스도 많기 때문에 선택적으로 사용할 수 있어야 한다.</p>
+<h2 id="peiji-kaesineun-nuguyi-soyuinga">페이지 캐시는 누구의 소유인가?</h2>
+<p>스택과 힙에 사용되는 익명 페이지는 해당 프로세스의 소유이지만, 페이지 캐시는 누구나 사용할 수 있기 때문에 어떤 프로세스의 소유인지가 애매하다. 현재 리눅스 커널은 간단히 페이지 캐시에 처음 접근해서 페이지를 할당받은 프로세스의 소유로 하고 있다. 그래서 페이지 캐시를 처음 접근할수록 불리할 수도 있다. 왜냐하면 다른 프로세스도 사용하는데 해당 프로세스의 메모리 사용량만 줄어들기 때문이다.</p>
+<h2 id="juyihaeyahal-sahang">주의해야할 사항</h2>
+<p>높은 우선순위를 가진 파드도 커널에 의해 종료될 수 있다. 시스템 전체의 메모리가 부족해서 실행되는 커널이나 쿠버네티스의 OOM 에 의해 종료되진 않겠지만, 스왑 기능 없이 스택이나 힙을 과도하게 사용한다면 언제든 종료될 수 있다. 그래서 우선순위를 높이기 위해 최대 메모리 사용량을 명시할 때는 신중히 설정해야 한다.</p>
+<p>높은 우선순위를 가진 파드가 낮은 우선순위를 가진 파드에 의해 방해받을 수 있다. 리눅스 커널은 여러 가지 상황에서 일부 메모리를 반환하기 시작하는데, 이때 루트 CGROUP 부터 PRE-ORDER 방식으로 순회하면서 LRU 정책에 의해 반환하기 때문에 우선순위가 높은 파드의 최근 사용되지 않은 페이지가 반환될 수 있다.</p>
+<p>낮은 우선순위를 가진 파드가 메모리를 반환하기 위해 과도한 디스크 쓰기 작업을 수행하면 병목 현상이 발생할 수 있다. 이를 해결하기 위해 CGroupV2 에는 디스크 읽기/쓰기 한도를 설정할 수 있는 기능이 있지만, 아직 쿠버네티스는 이를 활용하고 있지 않다.</p>
+
+      <nav>
+        <div>
+          <a href="https://haruband.github.io/k8s-networkpolicy/">&#8249; [K8S] Cilium NetworkPolicy 문제 분석</a>
+        </div>
+        <div>
+          <a href="https://haruband.github.io/k8s-rpfilter/"> [K8S] Cilium RPFilter 문제 분석 &#8250;</a>
+        </div>
+      </nav>
+    </article>
+
+    <div class="sblock">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/k8s/">Series</a><br>
+
+          
+          
+      <a href="https://haruband.github.io/k8s-cni-vxlan/">[K8S&#x2F;Cilium] VXLAN 기반 Tunneling Datapath 기법</a><br>
+
+          
+            <details>
+              <summary>More...</summary>
+            </details>
+            <div class="hidden_li">
+                <a href="https://haruband.github.io/k8s-cni-ipvlan/">[K8S&#x2F;Cilium] IPVLAN 기반 Routing Datapath 기법</a><br>
+                <a href="https://haruband.github.io/k8s-cni-service/">[K8S&#x2F;Cilium] ClusterIP 서비스</a><br>
+                <a href="https://haruband.github.io/k8s-cni-nodeport/">[K8S&#x2F;Cilium] NodePort 서비스</a><br>
+                <a href="https://haruband.github.io/k8s-cni-dsr/">[K8S&#x2F;Cilium] DSR (Direct Server Return)</a><br>
+                <a href="https://haruband.github.io/k8s-cni-redirect/">[K8S&#x2F;Cilium] bpf_redirect_peer()&#x2F;bpf_redirect_neigh()</a><br>
+                <a href="https://haruband.github.io/k8s-cni-routing-benchmark/">[K8S&#x2F;Cilium] 라우팅 기법 성능 평가</a><br>
+                <a href="https://haruband.github.io/k8s-cni-ipvlan-redirect-bug/">[K8S&#x2F;Cilium] IPVLAN 기반 Cilium 의 NodePort 버그 분석</a><br>
+                <a href="https://haruband.github.io/k8s-cni-loadbalancing/">[K8S&#x2F;Cilium] Socket-Based LoadBalancing 기법</a><br>
+                <a href="https://haruband.github.io/k8s-cni-servicemesh-proxy/">[K8S&#x2F;Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy)</a><br>
+                <a href="https://haruband.github.io/k8s-vxlan-forbidden/">[K8S] VXLAN 사용 불가 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-nat-loopback-snat/">[K8S] NAT 루프백 문제 분석 (SNAT)</a><br>
+                <a href="https://haruband.github.io/k8s-kafka-optimize-loadbalancer/">[K8S] 네트워크 최적화 (MetalLB)</a><br>
+                <a href="https://haruband.github.io/k8s-proxy-bypass/">[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-memory-swap/">[K8S] 메모리 스와핑 지원 분석</a><br>
+                <a href="https://haruband.github.io/k8s-nat-loopback-lrp/">[K8S] NAT 루프백 문제 분석 (LRP)</a><br>
+            </div>
+
+          
+
+          
+            <a href="https://haruband.github.io/k8s-cgroupv2-privatens/">[K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-rpfilter/">[K8S] Cilium RPFilter 문제 분석</a><br>
+
+          
+            
+      <a class="scur" href="https://haruband.github.io/k8s-qos-memory/">[K8S] 메모리 QoS 지원 분석</a><br>
+    
+
+          
+            <a href="https://haruband.github.io/k8s-networkpolicy/">[K8S] Cilium NetworkPolicy 문제 분석</a><br>
+          
+            <a href="https://haruband.github.io/k8s-spark-optimize/">[K8S&#x2F;Spark] 성능 최적화</a><br>
+          
+            <details>
+              <summary>More...</summary>
+            </details>
+            <div class="hidden_li">
+                <a href="https://haruband.github.io/k8s-spark-optimize-swap/">[K8S&#x2F;Spark] 메모리 최적화 (Swap)</a><br>
+                <a href="https://haruband.github.io/k8s-istio-ambientmesh/">[K8S&#x2F;Istio] AmbientMesh 소개</a><br>
+                <a href="https://haruband.github.io/k8s-istio-ambientmesh-flow/">[K8S&#x2F;Istio] AmbientMesh 동작 과정 분석</a><br>
+                <a href="https://haruband.github.io/k8s-istio-ambientmesh-rpfilter/">[K8S&#x2F;Istio] AmbientMesh RPFilter 문제 분석</a><br>
+            </div>
+        
+      <a href="https://haruband.github.io/k8s-istio-ambientmesh-cilium/">[K8S&#x2F;Istio] AmbientMesh Cilium 문제 분석</a><br>
+
+        
+      </div>
+      <div class="blockdiv sticky">
+        <a class="b s150" href="#">Index</a>
+        <div>
+          <a href="#eoddeohge-peuroseseuga-sayonghaneun-memorireul-jehanhaneunga">어떻게 프로세스가 사용하는 메모리를 제한하는가?</a>
+        </div>
+        <div>
+          <a href="#eoddeohge-siseutemi-sayonghaneun-memorireul-jehanhaneunga">어떻게 시스템이 사용하는 메모리를 제한하는가?</a>
+        </div>
+        <div>
+          <a href="#eoddeohge-peuroseseuga-sayong-jungin-memorireul-banhwanhaneunga">어떻게 프로세스가 사용 중인 메모리를 반환하는가?</a>
+        </div>
+        <div>
+          <a href="#seuwab-gineungi-bandeusi-pilyohanga">스왑 기능이 반드시 필요한가?</a>
+        </div>
+        <div>
+          <a href="#peiji-kaesineun-nuguyi-soyuinga">페이지 캐시는 누구의 소유인가?</a>
+        </div>
+        <div>
+          <a href="#juyihaeyahal-sahang">주의해야할 사항</a>
+        </div>
+      </div>
+    </div>
+  </main>
+  <footer>
+    <div class="c">
+      <nav class="tpad"><div><a href="https://www.linkedin.com/in/inhyeok-kim-7620a0b0/" target="_blank" title="LinkedIn"><i type="Button" class="svg linkedin" title="LinkedIn"></i></a><a href="https://github.com/haruband/" target="_blank" title="Github"><i type="Button" class="svg github" title="Github"></i></a></div></nav>
+      <nav class="vpad">
+        <a class="rpad s90" href="https://haruband.github.io/about/"> About </a>
+        <a class="rpad s90" href="https://haruband.github.io/contact/"> Contact </a>
+      </nav>
+      <p class="s80"> &copy; <span id="year">2025</span> CodeBook</p>
+      <p class="s80">Powered by <a href="https://www.getzola.org/" target="_blank">Zola</a> & <a href="https://github.com/jieiku/abridge/" target="_blank">Abridge</a></p>
+    </div>
+  </footer><span class="topout">
+<span class="topleft"> </span><a href="#" class="top" title="Back to Top"><i class="svgs svgh angu"></i></a>
+</span>
+</body>
+</html>

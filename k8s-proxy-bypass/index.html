@@ -1,0 +1,215 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://haruband.github.io/js/theme.min.js" integrity="sha384-pb++s6uBRKaQv+iAXpgA/H3IlpLZdO14tTwuCI7uXmz4aaZdByoCcM+6BhynMq/1"></script>
+  <link rel="stylesheet" href="https://haruband.github.io/abridge.css?h=98ebdf6fd3d59dfb2edf" />
+  <meta charset="utf-8" />
+  <meta http-equiv="x-ua-compatible" content="ie=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="base" content="https://haruband.github.io" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#333333" />
+  <meta name="msapplication-TileColor" content="#333333" />
+  <link rel="manifest" href="https://haruband.github.io/manifest.min.json" />
+  <link rel="mask-icon" href="https://haruband.github.io/safari-pinned-tab.svg" color="#ff9900" />
+  <link rel="icon" type="image/svg+xml" href="https://haruband.github.io/favicon.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="https://haruband.github.io/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="https://haruband.github.io/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="https://haruband.github.io/favicon-16x16.png" />
+  <link rel="alternate" type="application/atom+xml" title="CodeBook Atom Feed" href="https://haruband.github.io/atom.xml" />
+  <meta name="robots" content="index, follow" />
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <title>[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석 | CodeBook</title>
+  <meta name="author" content="Inhyeok Kim" />
+  <meta name="copyright" content="CodeBook" />
+  <meta name="description" content="Haruband&#x27;s TechBlog" />
+  <link rel="canonical" href="https://haruband.github.io/k8s-proxy-bypass/" />
+  <meta name="keywords" content="Arrow, Datafusion, Kubernetes" />
+  <meta name="google-site-verification" content="Your Google Site verification code." />
+  <meta name="msvalidate.01" content="Your Bing Site verification code." />
+  <meta property="og:url" content="https://haruband.github.io/k8s-proxy-bypass/" />
+  <meta name="twitter:url" content="https://haruband.github.io/k8s-proxy-bypass/" />
+  <meta property="og:description" content="Haruband&#x27;s TechBlog" />
+  <meta name="twitter:description" content="Haruband&#x27;s TechBlog" />
+  <meta property="og:title" content="[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석 | CodeBook" />
+  <meta name="twitter:title" content="[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석 | CodeBook" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:site_name" content="CodeBook" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:type" content="website" />
+  <meta property="og:updated_time" content="2021-03-21" />
+  <meta name="twitter:site" content="@your-user-name" />
+  <meta name="twitter:creator" content="@your-user-name" />
+  <script defer src="https://haruband.github.io/js/abridge.min.js?h=e0f9a881a665c86cce9c" integrity="sha384-QF67y7RnPkuDrJNQqn3/7nYxqxWkW/qHI7zN0WTES1aXbf+TotoByRBb835fUE6U"></script>
+  <noscript><link rel="stylesheet" href="https://haruband.github.io/nojs.css" /></noscript>
+</head>
+<body>
+  <header>
+    <nav>
+      <div><big><a href="https://haruband.github.io" title="CodeBook">CodeBook</a></big></div>
+      <div>
+
+        <div>
+          <ul><li><a class="s110" href="https://haruband.github.io/archive/"> Posts </a></li><li><a class="s110" href="https://haruband.github.io/tags/"> Tags </a></li><li><i type="reset" id="mode" class="js svgs adjust"></i></ul>
+        </div>
+
+        <div>
+          <div>
+            <form autocomplete=off class="js" name="goSearch" id="searchbox">
+              <div class="searchd">
+                <input id="searchinput" type="text" placeholder="Search" title="Search" />
+                <button type="submit" title="Search" class="svgs svgm search"></button>
+              </div>
+              <div class="results"><div id="suggestions"></div></div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </nav>
+  </header>
+  <main>
+    <article>
+      <h1><a href="https://haruband.github.io/k8s-proxy-bypass/">[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석</a></h1>
+
+      <span class="s95"> Inhyeok Kim <span class="rpad"></span> March 21, 2021 <span class="rpad"></span>Updated: March 21, 2021 <span class="rpad"></span> #<a href="https://haruband.github.io/tags/k8s/">K8S</a>  #<a href="https://haruband.github.io/tags/kubernetes/">Kubernetes</a>  #<a href="https://haruband.github.io/tags/cilium/">Cilium</a> </span>
+
+    
+        <div class="block">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/k8s/">K8S (Series)</a><br>
+            <a href="https://haruband.github.io/k8s-cni-vxlan/">[K8S&#x2F;Cilium] VXLAN 기반 Tunneling Datapath 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-ipvlan/">[K8S&#x2F;Cilium] IPVLAN 기반 Routing Datapath 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-service/">[K8S&#x2F;Cilium] ClusterIP 서비스</a><br>
+            <a href="https://haruband.github.io/k8s-cni-nodeport/">[K8S&#x2F;Cilium] NodePort 서비스</a><br>
+            <a href="https://haruband.github.io/k8s-cni-dsr/">[K8S&#x2F;Cilium] DSR (Direct Server Return)</a><br>
+            <a href="https://haruband.github.io/k8s-cni-redirect/">[K8S&#x2F;Cilium] bpf_redirect_peer()&#x2F;bpf_redirect_neigh()</a><br>
+            <a href="https://haruband.github.io/k8s-cni-routing-benchmark/">[K8S&#x2F;Cilium] 라우팅 기법 성능 평가</a><br>
+            <a href="https://haruband.github.io/k8s-cni-ipvlan-redirect-bug/">[K8S&#x2F;Cilium] IPVLAN 기반 Cilium 의 NodePort 버그 분석</a><br>
+            <a href="https://haruband.github.io/k8s-cni-loadbalancing/">[K8S&#x2F;Cilium] Socket-Based LoadBalancing 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-servicemesh-proxy/">[K8S&#x2F;Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy)</a><br>
+            <a href="https://haruband.github.io/k8s-vxlan-forbidden/">[K8S] VXLAN 사용 불가 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-nat-loopback-snat/">[K8S] NAT 루프백 문제 분석 (SNAT)</a><br>
+            <a href="https://haruband.github.io/k8s-kafka-optimize-loadbalancer/">[K8S] 네트워크 최적화 (MetalLB)</a><br>
+            <a class="scur" href="https://haruband.github.io/k8s-proxy-bypass/">[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석</a><br> 
+          
+            <a href="https://haruband.github.io/k8s-memory-swap/">[K8S] 메모리 스와핑 지원 분석</a><br>
+            <a href="https://haruband.github.io/k8s-nat-loopback-lrp/">[K8S] NAT 루프백 문제 분석 (LRP)</a><br>
+            <a href="https://haruband.github.io/k8s-cgroupv2-privatens/">[K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-rpfilter/">[K8S] Cilium RPFilter 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-qos-memory/">[K8S] 메모리 QoS 지원 분석</a><br>
+            <a href="https://haruband.github.io/k8s-networkpolicy/">[K8S] Cilium NetworkPolicy 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-spark-optimize/">[K8S&#x2F;Spark] 성능 최적화</a><br>
+            <a href="https://haruband.github.io/k8s-spark-optimize-swap/">[K8S&#x2F;Spark] 메모리 최적화 (Swap)</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh/">[K8S&#x2F;Istio] AmbientMesh 소개</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh-flow/">[K8S&#x2F;Istio] AmbientMesh 동작 과정 분석</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh-rpfilter/">[K8S&#x2F;Istio] AmbientMesh RPFilter 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh-cilium/">[K8S&#x2F;Istio] AmbientMesh Cilium 문제 분석</a><br>
+      </div>
+    </div>
+
+
+<p>오늘은 Cilium 에서 소켓 기반 로드밸런싱을 이용할 때 발생하는 EnvoyProxy 사이드카 우회 문제에 대해 살펴보고자 한다. 이는 현재 모든 서비스 메쉬(Istio, Linkerd, ...)에서 서비스 IP 기반으로 동작하는 모든 필터를 우회하는 심각한 문제를 유발하고 있다. 왜 이런 문제가 발생했는지 살펴보고, 몇 가지 해결 방안을 소개하도록 하겠다.</p>
+<p>우선 Cilium/Istio 에서 EnvoyProxy 사이드카가 동작하는 원리를 간단히 살펴보자. 아래 그림은 서비스 컨테이너에서 전송하는 패킷의 이동 경로(1-11번까지)를 간단히 표현한 것이다.</p>
+<p><img src="https://haruband.github.io/k8s-proxy-bypass/./cilium-envoy.png" alt="cilium.envoy" /></p>
+<p>IPTables 를 이용하는 사이드카 기반의 모든 프록시가 대부분 비슷한 방식으로 동작하는데, 서비스 컨테이너에서 전송하는 모든 패킷은 Netfilter 에서 강제로 프록시(envoy) 컨테이너로 전달된다. 그리고 프록시 컨테이너에서 등록된 정책에 따라 해당 패킷을 드롭하거나, 지연시키거나, 변환한다. 이때 사용되는 정책은 헤드리스와 같이 특이한 경우를 제외하고는 모두 서비스 IP 를 기반으로 만들어진다.</p>
+<p>다음으로 Cilium 에서 로드밸런싱이 일어나는 과정에 대해 간단히 살펴보자. 일반적인 로드밸런싱은 위 그림의 10번 단계에서 일어난다. 파드 내부의 네트워크 장치(eth0)와 VETH 로 연결된 호스트 네트워크 장치(veth0)의 ingress BPF 프로그램에서 서비스 IP 를 백엔드 IP 로 변환하여 패킷을 전달한다. 이는 모든 패킷에 대해 주소 변환 및 역변환 작업을 해야하는 문제가 있는데, 이를 해결하기 위해 나온 것이 바로 소켓 기반 로드밸런싱이다. 이는 위 그림의 2번 단계에서 소켓 시스템콜(connect, sendto)에 연결된 BPF 프로그램이 서비스 IP 를 백엔드 IP 로 변환하여 소켓의 목적지 주소를 미리 변경해놓는 방식이다. 이를 통해 매번 패킷의 목적지 주소를 변환/역변환하는 오버헤드를 줄일 수 있다.</p>
+<p>이쯤되면 다들 눈치를 챘겠지만, <strong>Cilium 에서 소켓 기반 로드밸런싱을 이용할 경우 2번 단계에서 이미 서비스 IP 가 백엔드 IP 로 변환되었기 때문에 당연히 서비스 IP 기반으로 동작하는 프록시 컨테이너는 제대로 작동할 수가 없는 것이다.</strong></p>
+<p>하지만 Istio/Envoy 에서는 예외적인 경우가 있는데, TCP 필터를 사용할 때는 설명했던 문제가 발생하지만 HTTP 필터를 사용할 때는 문제가 발생하지 않는다. 이는 <strong>Envoy 의 HTTP 필터가 HTTP 패킷의 Host 헤더를 이용해서 필터링을 수행하기 때문에 패킷의 목적지 주소가 서비스 IP 에서 백엔드 IP 로 변환되어 있어도 문제가 되지 않는 것이다.</strong></p>
+<p>오늘 소개한 문제를 해결하기 위한 몇 가지 방법을 소개하도록 하겠다.</p>
+<p>첫 번째로 지금 현재 바로 사용 가능한 방법은 소켓 기반 로드밸런싱을 아예 사용하지 않는 것이다. 약간의 오버헤드는 있지만 가장 간단하고 확실한 방법이다. 두 번째는 호스트에서만 소켓 기반 로드밸런싱을 사용하거나, 프록시 컨테이너를 사용 중인 파드에서만 소켓 기반 로드밸런싱을 사용하지 못 하게 하는 것인데 이는 아직 Cilium 개발자 커뮤니티에서 논의 중인 기능이기 때문에 당장은 사용할 수 없다. 세 번째는 프록시 컨테이너에서 변환 전의 서비스 IP 를 확인 할 수 있는 기능을 제공하는 것인데 이 또한 현재 Cilium 과 Istio/Linkerd 개발자들이 논의 중에 있다.</p>
+<p>참고로, 첫 번째 방식을 사용할 때 주의해야 할 점이 있는데, KubeProxyReplacement 옵션이 probe 이거나 strict 이면 소켓 기반 로드밸런싱 기능은 해제가 되지 않는다. 해당 옵션을 꺼도 자동 탐지 기능에 의해서 다시 켜지니 주의하기 바란다.</p>
+
+      <nav>
+        <div>
+          <a href="https://haruband.github.io/k8s-memory-swap/">&#8249; [K8S] 메모리 스와핑 지원 분석</a>
+        </div>
+        <div>
+          <a href="https://haruband.github.io/k8s-kafka-optimize-loadbalancer/"> [K8S] 네트워크 최적화 (MetalLB) &#8250;</a>
+        </div>
+      </nav>
+    </article>
+
+    <div class="sblock">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/k8s/">Series</a><br>
+
+          
+          
+      <a href="https://haruband.github.io/k8s-cni-vxlan/">[K8S&#x2F;Cilium] VXLAN 기반 Tunneling Datapath 기법</a><br>
+
+          
+            <details>
+              <summary>More...</summary>
+            </details>
+            <div class="hidden_li">
+                <a href="https://haruband.github.io/k8s-cni-ipvlan/">[K8S&#x2F;Cilium] IPVLAN 기반 Routing Datapath 기법</a><br>
+                <a href="https://haruband.github.io/k8s-cni-service/">[K8S&#x2F;Cilium] ClusterIP 서비스</a><br>
+                <a href="https://haruband.github.io/k8s-cni-nodeport/">[K8S&#x2F;Cilium] NodePort 서비스</a><br>
+                <a href="https://haruband.github.io/k8s-cni-dsr/">[K8S&#x2F;Cilium] DSR (Direct Server Return)</a><br>
+                <a href="https://haruband.github.io/k8s-cni-redirect/">[K8S&#x2F;Cilium] bpf_redirect_peer()&#x2F;bpf_redirect_neigh()</a><br>
+                <a href="https://haruband.github.io/k8s-cni-routing-benchmark/">[K8S&#x2F;Cilium] 라우팅 기법 성능 평가</a><br>
+                <a href="https://haruband.github.io/k8s-cni-ipvlan-redirect-bug/">[K8S&#x2F;Cilium] IPVLAN 기반 Cilium 의 NodePort 버그 분석</a><br>
+                <a href="https://haruband.github.io/k8s-cni-loadbalancing/">[K8S&#x2F;Cilium] Socket-Based LoadBalancing 기법</a><br>
+                <a href="https://haruband.github.io/k8s-cni-servicemesh-proxy/">[K8S&#x2F;Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy)</a><br>
+                <a href="https://haruband.github.io/k8s-vxlan-forbidden/">[K8S] VXLAN 사용 불가 문제 분석</a><br>
+            </div>
+
+          
+
+          
+            <a href="https://haruband.github.io/k8s-nat-loopback-snat/">[K8S] NAT 루프백 문제 분석 (SNAT)</a><br>
+            <a href="https://haruband.github.io/k8s-kafka-optimize-loadbalancer/">[K8S] 네트워크 최적화 (MetalLB)</a><br>
+
+          
+            
+      <a class="scur" href="https://haruband.github.io/k8s-proxy-bypass/">[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석</a><br>
+    
+
+          
+            <a href="https://haruband.github.io/k8s-memory-swap/">[K8S] 메모리 스와핑 지원 분석</a><br>
+          
+            <a href="https://haruband.github.io/k8s-nat-loopback-lrp/">[K8S] NAT 루프백 문제 분석 (LRP)</a><br>
+          
+            <details>
+              <summary>More...</summary>
+            </details>
+            <div class="hidden_li">
+                <a href="https://haruband.github.io/k8s-cgroupv2-privatens/">[K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-rpfilter/">[K8S] Cilium RPFilter 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-qos-memory/">[K8S] 메모리 QoS 지원 분석</a><br>
+                <a href="https://haruband.github.io/k8s-networkpolicy/">[K8S] Cilium NetworkPolicy 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-spark-optimize/">[K8S&#x2F;Spark] 성능 최적화</a><br>
+                <a href="https://haruband.github.io/k8s-spark-optimize-swap/">[K8S&#x2F;Spark] 메모리 최적화 (Swap)</a><br>
+                <a href="https://haruband.github.io/k8s-istio-ambientmesh/">[K8S&#x2F;Istio] AmbientMesh 소개</a><br>
+                <a href="https://haruband.github.io/k8s-istio-ambientmesh-flow/">[K8S&#x2F;Istio] AmbientMesh 동작 과정 분석</a><br>
+                <a href="https://haruband.github.io/k8s-istio-ambientmesh-rpfilter/">[K8S&#x2F;Istio] AmbientMesh RPFilter 문제 분석</a><br>
+            </div>
+        
+      <a href="https://haruband.github.io/k8s-istio-ambientmesh-cilium/">[K8S&#x2F;Istio] AmbientMesh Cilium 문제 분석</a><br>
+
+        
+      </div>
+  </main>
+  <footer>
+    <div class="c">
+      <nav class="tpad"><div><a href="https://www.linkedin.com/in/inhyeok-kim-7620a0b0/" target="_blank" title="LinkedIn"><i type="Button" class="svg linkedin" title="LinkedIn"></i></a><a href="https://github.com/haruband/" target="_blank" title="Github"><i type="Button" class="svg github" title="Github"></i></a></div></nav>
+      <nav class="vpad">
+        <a class="rpad s90" href="https://haruband.github.io/about/"> About </a>
+        <a class="rpad s90" href="https://haruband.github.io/contact/"> Contact </a>
+      </nav>
+      <p class="s80"> &copy; <span id="year">2025</span> CodeBook</p>
+      <p class="s80">Powered by <a href="https://www.getzola.org/" target="_blank">Zola</a> & <a href="https://github.com/jieiku/abridge/" target="_blank">Abridge</a></p>
+    </div>
+  </footer><span class="topout">
+<span class="topleft"> </span><a href="#" class="top" title="Back to Top"><i class="svgs svgh angu"></i></a>
+</span>
+</body>
+</html>

@@ -1,0 +1,342 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://haruband.github.io/js/theme.min.js" integrity="sha384-pb++s6uBRKaQv+iAXpgA/H3IlpLZdO14tTwuCI7uXmz4aaZdByoCcM+6BhynMq/1"></script>
+  <link rel="stylesheet" href="https://haruband.github.io/abridge.css?h=98ebdf6fd3d59dfb2edf" />
+  <meta charset="utf-8" />
+  <meta http-equiv="x-ua-compatible" content="ie=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="base" content="https://haruband.github.io" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#333333" />
+  <meta name="msapplication-TileColor" content="#333333" />
+  <link rel="manifest" href="https://haruband.github.io/manifest.min.json" />
+  <link rel="mask-icon" href="https://haruband.github.io/safari-pinned-tab.svg" color="#ff9900" />
+  <link rel="icon" type="image/svg+xml" href="https://haruband.github.io/favicon.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="https://haruband.github.io/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="https://haruband.github.io/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="https://haruband.github.io/favicon-16x16.png" />
+  <link rel="alternate" type="application/atom+xml" title="CodeBook Atom Feed" href="https://haruband.github.io/atom.xml" />
+  <meta name="robots" content="index, follow" />
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <title>[K8S] Cilium RPFilter 문제 분석 | CodeBook</title>
+  <meta name="author" content="Inhyeok Kim" />
+  <meta name="copyright" content="CodeBook" />
+  <meta name="description" content="Haruband&#x27;s TechBlog" />
+  <link rel="canonical" href="https://haruband.github.io/k8s-rpfilter/" />
+  <meta name="keywords" content="Arrow, Datafusion, Kubernetes" />
+  <meta name="google-site-verification" content="Your Google Site verification code." />
+  <meta name="msvalidate.01" content="Your Bing Site verification code." />
+  <meta property="og:url" content="https://haruband.github.io/k8s-rpfilter/" />
+  <meta name="twitter:url" content="https://haruband.github.io/k8s-rpfilter/" />
+  <meta property="og:description" content="Haruband&#x27;s TechBlog" />
+  <meta name="twitter:description" content="Haruband&#x27;s TechBlog" />
+  <meta property="og:title" content="[K8S] Cilium RPFilter 문제 분석 | CodeBook" />
+  <meta name="twitter:title" content="[K8S] Cilium RPFilter 문제 분석 | CodeBook" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:site_name" content="CodeBook" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:type" content="website" />
+  <meta property="og:updated_time" content="2021-04-14" />
+  <meta name="twitter:site" content="@your-user-name" />
+  <meta name="twitter:creator" content="@your-user-name" />
+  <script defer src="https://haruband.github.io/js/abridge.min.js?h=e0f9a881a665c86cce9c" integrity="sha384-QF67y7RnPkuDrJNQqn3/7nYxqxWkW/qHI7zN0WTES1aXbf+TotoByRBb835fUE6U"></script>
+  <noscript><link rel="stylesheet" href="https://haruband.github.io/nojs.css" /></noscript>
+</head>
+<body>
+  <header>
+    <nav>
+      <div><big><a href="https://haruband.github.io" title="CodeBook">CodeBook</a></big></div>
+      <div>
+
+        <div>
+          <ul><li><a class="s110" href="https://haruband.github.io/archive/"> Posts </a></li><li><a class="s110" href="https://haruband.github.io/tags/"> Tags </a></li><li><i type="reset" id="mode" class="js svgs adjust"></i></ul>
+        </div>
+
+        <div>
+          <div>
+            <form autocomplete=off class="js" name="goSearch" id="searchbox">
+              <div class="searchd">
+                <input id="searchinput" type="text" placeholder="Search" title="Search" />
+                <button type="submit" title="Search" class="svgs svgm search"></button>
+              </div>
+              <div class="results"><div id="suggestions"></div></div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </nav>
+  </header>
+  <main>
+    <article>
+      <h1><a href="https://haruband.github.io/k8s-rpfilter/">[K8S] Cilium RPFilter 문제 분석</a></h1>
+
+      <span class="s95"> Inhyeok Kim <span class="rpad"></span> April 14, 2021 <span class="rpad"></span>Updated: April 14, 2021 <span class="rpad"></span> #<a href="https://haruband.github.io/tags/k8s/">K8S</a>  #<a href="https://haruband.github.io/tags/kubernetes/">Kubernetes</a>  #<a href="https://haruband.github.io/tags/cilium/">Cilium</a> </span>
+
+    
+        <div class="block">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/k8s/">K8S (Series)</a><br>
+            <a href="https://haruband.github.io/k8s-cni-vxlan/">[K8S&#x2F;Cilium] VXLAN 기반 Tunneling Datapath 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-ipvlan/">[K8S&#x2F;Cilium] IPVLAN 기반 Routing Datapath 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-service/">[K8S&#x2F;Cilium] ClusterIP 서비스</a><br>
+            <a href="https://haruband.github.io/k8s-cni-nodeport/">[K8S&#x2F;Cilium] NodePort 서비스</a><br>
+            <a href="https://haruband.github.io/k8s-cni-dsr/">[K8S&#x2F;Cilium] DSR (Direct Server Return)</a><br>
+            <a href="https://haruband.github.io/k8s-cni-redirect/">[K8S&#x2F;Cilium] bpf_redirect_peer()&#x2F;bpf_redirect_neigh()</a><br>
+            <a href="https://haruband.github.io/k8s-cni-routing-benchmark/">[K8S&#x2F;Cilium] 라우팅 기법 성능 평가</a><br>
+            <a href="https://haruband.github.io/k8s-cni-ipvlan-redirect-bug/">[K8S&#x2F;Cilium] IPVLAN 기반 Cilium 의 NodePort 버그 분석</a><br>
+            <a href="https://haruband.github.io/k8s-cni-loadbalancing/">[K8S&#x2F;Cilium] Socket-Based LoadBalancing 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-servicemesh-proxy/">[K8S&#x2F;Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy)</a><br>
+            <a href="https://haruband.github.io/k8s-vxlan-forbidden/">[K8S] VXLAN 사용 불가 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-nat-loopback-snat/">[K8S] NAT 루프백 문제 분석 (SNAT)</a><br>
+            <a href="https://haruband.github.io/k8s-kafka-optimize-loadbalancer/">[K8S] 네트워크 최적화 (MetalLB)</a><br>
+            <a href="https://haruband.github.io/k8s-proxy-bypass/">[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-memory-swap/">[K8S] 메모리 스와핑 지원 분석</a><br>
+            <a href="https://haruband.github.io/k8s-nat-loopback-lrp/">[K8S] NAT 루프백 문제 분석 (LRP)</a><br>
+            <a href="https://haruband.github.io/k8s-cgroupv2-privatens/">[K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석</a><br>
+            <a class="scur" href="https://haruband.github.io/k8s-rpfilter/">[K8S] Cilium RPFilter 문제 분석</a><br> 
+          
+            <a href="https://haruband.github.io/k8s-qos-memory/">[K8S] 메모리 QoS 지원 분석</a><br>
+            <a href="https://haruband.github.io/k8s-networkpolicy/">[K8S] Cilium NetworkPolicy 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-spark-optimize/">[K8S&#x2F;Spark] 성능 최적화</a><br>
+            <a href="https://haruband.github.io/k8s-spark-optimize-swap/">[K8S&#x2F;Spark] 메모리 최적화 (Swap)</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh/">[K8S&#x2F;Istio] AmbientMesh 소개</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh-flow/">[K8S&#x2F;Istio] AmbientMesh 동작 과정 분석</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh-rpfilter/">[K8S&#x2F;Istio] AmbientMesh RPFilter 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh-cilium/">[K8S&#x2F;Istio] AmbientMesh Cilium 문제 분석</a><br>
+      </div>
+    </div>
+
+
+<p>리눅스는 패킷의 출발지 주소를 마음대로 조작해서 공격하는 IP 스푸핑 공격을 막기위해 RPFilter (Reverse Path Filter) 라는 기능을 제공한다. <strong>이 기능은 간단히 소개하면 특정 네트워크 장치로 들어온 패킷이 동일한 네트워크 장치로 나갈 수 있는지를 확인하는 것인데, 이는 해당 패킷의 출발지 주소를 목적지 주소로 하는 라우팅 정보(FIB)를 이용하여 확인한다.</strong> 오늘은 이 기능으로 인해 발생한 문제에 대해 자세히 살펴보도록 하자.</p>
+<h2 id="eoddeohan-munjega-balsaenghaessneunga">어떠한 문제가 발생했는가???</h2>
+<p>개발 서버에 쿠버네티스와 Cilium 을 설치하였는데 아래와 같이 coredns 가 동작하지 않는 문제가 발생하였다. 정확한 문제를 파악하기 위해 관련 정보들을 하나씩 분석해보도록 하자.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> kubectl get pods -o wide -n kube-system</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">NAMESPACE</span></span><span class="z-meta z-function-call z-arguments z-shell">     NAME                              READY   STATUS    RESTARTS   AGE     IP              NODE    NOMINATED NODE   READINESS GATES</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">kube-system</span></span><span class="z-meta z-function-call z-arguments z-shell">   coredns-749558f7dd-w6jdj          0/1     Running   0          2m59s   10.0.0.113      node0   <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>none<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>           <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>none<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">kube-system</span></span><span class="z-meta z-function-call z-arguments z-shell">   coredns-749558f7dd-xppfp          0/1     Running   0          2m59s   10.0.0.250      node0   <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>none<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>           <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>none<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>
+</span></span></code></pre>
+<p>아래와 같이 원인을 알 수 없는 이유로 상태 확인(readiness/linveness)이 실패하고 있었다. 현재 상황에서 예상해볼 수 있는 것은 상태 확인을 하는 호스트(kubelet)와 파드(coredns) 간의 네트워크에 어떠한 문제가 생긴 것이다. 그래서 호스트와 파드(coredns) 양쪽에서 tcpdump 로 확인해보니, 호스트에서 보낸 패킷을 파드(coredns)에서 받은 후 응답 패킷을 보냈지만 호스트에서는 해당 응답 패킷을 받지 못하였다. 일단 호스트가 파드(coredns)에서 보낸 응답 패킷을 알 수 없는 이유로 드롭하고 있다고 볼 수 있다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> kubectl describe pod coredns-749558f7dd-w6jdj -n kube-system</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Name:</span></span><span class="z-meta z-function-call z-arguments z-shell">                 coredns-749558f7dd-w6jdj</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Namespace:</span></span><span class="z-meta z-function-call z-arguments z-shell">            kube-system</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Events:</span></span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Type</span></span><span class="z-meta z-function-call z-arguments z-shell">     Reason                  Age    From               Message</span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">----</span></span><span class="z-meta z-function-call z-arguments z-shell">     ------                  ----   ----               -------</span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Warning</span></span><span class="z-meta z-function-call z-arguments z-shell">  Unhealthy  4m51s                 kubelet  Readiness probe failed: Get <span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>http://10.0.0.113:8181/ready<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span>: dial tcp 10.0.0.113:8181: i/o timeout (Client.Timeout exceeded while awaiting headers</span><span class="z-meta z-function-call z-shell"></span>)
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Warning</span></span><span class="z-meta z-function-call z-arguments z-shell">  Unhealthy  3m7s (x5 over 3m47s</span><span class="z-meta z-function-call z-shell"></span>)  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">kubelet</span></span><span class="z-meta z-function-call z-arguments z-shell">  Liveness probe failed: Get <span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>http://10.0.0.113:8080/health<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span>: context deadline exceeded (Client.Timeout exceeded while awaiting headers</span><span class="z-meta z-function-call z-shell"></span>)
+</span></code></pre>
+<p>이럴 경우 대부분은 패킷의 잘못된 출발지 주소로 인해 발생하는 마션소스(martian source) 문제이다. 해당 문제가 맞는지 확인해보자.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> sysctl -w net.ipv4.conf.all.log_martians=1</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> journal -k -f</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Dec</span></span><span class="z-meta z-function-call z-arguments z-shell"> 09 06:46:20 node0 kernel: IPv4: martian source 10.0.0.253 from 10.0.0.113, on dev lxc3c160d6c7aa0</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Dec</span></span><span class="z-meta z-function-call z-arguments z-shell"> 09 06:46:20 node0 kernel: ll header: 00000000: 8a 95 96 c7 1f 85 0a 50 d2 29 32 ba 08 00</span>
+</span></code></pre>
+<p>위와 같이 마션소스 로그를 활성화한 후 커널 로그를 확인해보니 예상대로 관련 로그를 찾을 수 있었다. 위의 로그는 lxc3c160d6c7aa0 네트워크 장치에서 출발지 주소(10.0.0.113)와 목적지 주소(10.0.0.253)인 패킷을 드롭했다는 내용이다. 이제 왜 이 패킷이 드롭되었는지 분석해보도록 하자.</p>
+<p>우선 아래와 같이 파드(coredns)의 네트워크 장치와 연결된 호스트의 네트워크 장치(VETH)를 확인해보자. coredns 의 PID(556675) 를 이용하여 nsenter 로 네트워크 네임스페이스 변경 후 네트워크 장치를 확인해보면 416 번 네트워크 장치를 볼 수 있다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> systemd-cgls</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Control</span></span><span class="z-meta z-function-call z-arguments z-shell"> group /:</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">│</span></span><span class="z-meta z-function-call z-arguments z-shell"> ├─kubepods-burstable-poddcf43d8a_eee1_466f_be7e_59e917cb8528.slice</span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">│</span></span><span class="z-meta z-function-call z-arguments z-shell"> │ └─crio-17b0acd8c8c28fa7daabfafa4b096fa0eb1bdc3f09dc25d206c507f7d2cf849d.scope …</span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">│</span></span><span class="z-meta z-function-call z-arguments z-shell"> │   └─556675 /coredns<span class="z-variable z-parameter z-option z-shell"><span class="z-punctuation z-definition z-parameter z-shell"> -</span>conf</span> /etc/coredns/Corefile</span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> nsenter -t 556675 -n bash</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> ip addr show</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">416:</span></span><span class="z-meta z-function-call z-arguments z-shell"> eth0@if417: <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>BROADCAST,MULTICAST,UP,LOWER_UP<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> mtu 1500 qdisc noqueue state UP group default qlen 1000</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">link/ether</span></span><span class="z-meta z-function-call z-arguments z-shell"> 0a:50:d2:29:32:ba brd ff:ff:ff:ff:ff:ff link-netns 621e8a57-2e46-4753-b9f1-c947fed6bdf6</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">inet</span></span><span class="z-meta z-function-call z-arguments z-shell"> 10.0.0.113/32 scope global eth0</span>
+</span><span class="z-source z-shell z-bash">       <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">valid_lft</span></span><span class="z-meta z-function-call z-arguments z-shell"> forever preferred_lft forever</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">inet6</span></span><span class="z-meta z-function-call z-arguments z-shell"> fe80::850:d2ff:fe29:32ba/64 scope link</span>
+</span><span class="z-source z-shell z-bash">       <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">valid_lft</span></span><span class="z-meta z-function-call z-arguments z-shell"> forever preferred_lft forever</span>
+</span></code></pre>
+<p>해당 네트워크 장치의 이름(eth0@if417)은 417 번 네트워크 장치와 연결된 장치라는 의미이고, 아래와 같이 호스트에서 해당 네트워크 장치인 lxc3c160d6c7aa0 를 찾을 수 있다. 즉, 위의 마션소스 로그는 파드(coredns)와 연결된 호스트의 네트워크 장치(lxc3c160d6c7aa0)에서 응답 패킷을 처리하는 동안 발생한 것이다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> ip addr show</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">417:</span></span><span class="z-meta z-function-call z-arguments z-shell"> lxc3c160d6c7aa0@if416: <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>BROADCAST,MULTICAST,UP,LOWER_UP<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> mtu 1500 qdisc noqueue state UP group default qlen 1000</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">link/ether</span></span><span class="z-meta z-function-call z-arguments z-shell"> 8a:95:96:c7:1f:85 brd ff:ff:ff:ff:ff:ff link-netns 36b7afe0-19f3-47cc-be7b-842bbfe9c960</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">inet6</span></span><span class="z-meta z-function-call z-arguments z-shell"> fe80::8895:96ff:fec7:1f85/64 scope link</span>
+</span><span class="z-source z-shell z-bash">       <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">valid_lft</span></span><span class="z-meta z-function-call z-arguments z-shell"> forever preferred_lft forever</span>
+</span></code></pre>
+<p>그렇다면 왜 호스트의 네트워크 장치(lxc3c160d6c7aa0)에서 해당 응답 패킷을 드롭한 것일까? 이는 처음 소개했던 RPFilter 의 동작 원리를 이용하면 간단히 확인할 수 있다. 아래와 같이 응답 패킷의 출발지 주소(10.0.0.113)를 목적지 주소로 하는 라우팅 정보(FIB)를 확인해보자.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> ip route get 10.0.0.113</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">10.0.0.113</span></span><span class="z-meta z-function-call z-arguments z-shell"> dev cilium_host src 10.0.0.253 uid 0</span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> ip addr show</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">5:</span></span><span class="z-meta z-function-call z-arguments z-shell"> cilium_host@cilium_net: <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>BROADCAST,MULTICAST,NOARP,UP,LOWER_UP<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> mtu 1500 qdisc noqueue state UP group default qlen 1000</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">link/ether</span></span><span class="z-meta z-function-call z-arguments z-shell"> 32:a7:e5:1c:b8:a5 brd ff:ff:ff:ff:ff:ff</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">inet</span></span><span class="z-meta z-function-call z-arguments z-shell"> 10.0.0.253/32 scope link cilium_host</span>
+</span><span class="z-source z-shell z-bash">       <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">valid_lft</span></span><span class="z-meta z-function-call z-arguments z-shell"> forever preferred_lft forever</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">inet6</span></span><span class="z-meta z-function-call z-arguments z-shell"> fe80::30a7:e5ff:fe1c:b8a5/64 scope link</span>
+</span><span class="z-source z-shell z-bash">       <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">valid_lft</span></span><span class="z-meta z-function-call z-arguments z-shell"> forever preferred_lft forever</span>
+</span></code></pre>
+<p>위의 라우팅 정보를 보면 호스트에서 10.0.0.113 으로 패킷을 전송할 때는 10.0.0.253 을 출발지 주소로 이용하여 cilium_host 네트워크 장치로 보낸다는 것을 알 수 있다. 그리고 해당 라우팅 정보가 선택된 이유는 현재 라우팅 테이블이 아래와 같이 구성되어 있기 때문이다. 즉, 목적지 주소가 10.0.0.0/24 인 모든 패킷은 cilium_host 네트워크 장치로 전달된다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> route -n</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Kernel</span></span><span class="z-meta z-function-call z-arguments z-shell"> IP routing table</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Destination</span></span><span class="z-meta z-function-call z-arguments z-shell">     Gateway         Genmask         Flags Metric Ref    Use Iface</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">0.0.0.0</span></span><span class="z-meta z-function-call z-arguments z-shell">         172.26.50.1     0.0.0.0         UG    0      0        0 eno1</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">10.0.0.0</span></span><span class="z-meta z-function-call z-arguments z-shell">        10.0.0.253      255.255.255.0   UG    0      0        0 cilium_host</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">10.0.0.253</span></span><span class="z-meta z-function-call z-arguments z-shell">      0.0.0.0         255.255.255.255 UH    0      0        0 cilium_host</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">10.0.1.0</span></span><span class="z-meta z-function-call z-arguments z-shell">        172.26.50.201   255.255.255.0   UG    0      0        0 eno1</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">172.17.0.0</span></span><span class="z-meta z-function-call z-arguments z-shell">      0.0.0.0         255.255.0.0     U     0      0        0 docker0</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">172.26.50.0</span></span><span class="z-meta z-function-call z-arguments z-shell">     0.0.0.0         255.255.255.0   U     0      0        0 eno1</span>
+</span></code></pre>
+<p>여기까지 분석한 내용들을 정리해보면, 호스트에서 패킷을 보낼 때는 cilium_host 네트워크 장치를 사용했지만, 응답 패킷은 lxc3c160d6c7aa0 네트워크 장치에서 처리하기 때문에 RPFilter 에 의해 해당 응답 패킷이 드롭되는 것이다. 하지만, 패킷을 보내는 장치와 받는 장치가 다른 것은 Cilium 에서는 일반적인 동작 방식 중 하나이기 때문에 Cilium 은 기본적으로 자신이 관리하는 모든 네트워크 장치에서 RPFilter 를 사용하지 않도록 설정해둔다. 즉, <strong>해당 문제는 아래와 같이 Cilium 에서 사용하지 않도록 설정해둔 RPFilter 가 알 수 없는 이유로 사용되면서 발생한 문제이다.</strong></p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> sysctl net.ipv4.conf.lxc3c160d6c7aa0.rp_filter</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">net.ipv4.conf.lxc3c160d6c7aa0.rp_filter</span></span><span class="z-meta z-function-call z-arguments z-shell"> = 2</span>
+</span></code></pre>
+<h2 id="eoddeohge-munjega-balsaenghaessneunga">어떻게 문제가 발생했는가???</h2>
+<p>Cilium 은 새로운 네트워크 장치를 만들 때 마다 RPFilter 를 사용하지 않도록 설정한다. 그런데 왜 RPFilter 가 사용된 것일까? 그 이유는 새로운 네트워크 장치가 추가될 때 마다 UDEV 에 의해 systemd-sysctl 이 실행되는데, 그 때 사용되는 모든 네트워크 장치의 기본 설정이 RPFilter 를 사용하는 것이기 때문이다. 즉, <strong>Cilium 에서 새로운 네트워크 장치를 만든 직후 RPFilter 를 사용하지 않도록 설정하지만, 곧이어 UDEV 에 의해 실행되는 systemd-sysctl 이 해당 네트워크 장치의 RPFilter 를 다시 사용하도록 만들어 버린 것이다.</strong></p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> cat /usr/lib/udev/rules.d/99-systemd.rules</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-variable z-other z-readwrite z-assignment z-shell">ACTION</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">=<span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>add<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span>,</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">SUBSYSTEM</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">=<span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>net<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span>,</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">KERNEL!</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell"><span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>lo<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span>,</span> <span class="z-variable z-other z-readwrite z-assignment z-shell">RUN</span><span class="z-keyword z-operator z-assignment z-shell">+=</span><span class="z-string z-unquoted z-shell"><span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>/lib/systemd/systemd-sysctl --prefix=/net/ipv4/conf/<span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-definition z-variable z-shell">$</span><span class="z-variable z-other z-readwrite z-shell">name</span></span> --prefix=/net/ipv4/neigh/<span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-definition z-variable z-shell">$</span><span class="z-variable z-other z-readwrite z-shell">name</span></span> --prefix=/net/ipv6/conf/<span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-definition z-variable z-shell">$</span><span class="z-variable z-other z-readwrite z-shell">name</span></span> --prefix=/net/ipv6/neigh/<span class="z-meta z-group z-expansion z-parameter z-shell"><span class="z-punctuation z-definition z-variable z-shell">$</span><span class="z-variable z-other z-readwrite z-shell">name</span></span><span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span></span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> cat /etc/sysctl.d/10-network-security.conf</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-variable z-other z-readwrite z-assignment z-shell">net.ipv4.conf.default.rp_filter</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">2</span>
+</span><span class="z-source z-shell z-bash"><span class="z-variable z-other z-readwrite z-assignment z-shell">net.ipv4.conf.all.rp_filter</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">2</span>
+</span></code></pre>
+<h2 id="eoddeohge-munjereul-haegyeolhaessneunga">어떻게 문제를 해결했는가???</h2>
+<p>해당 문제를 해결할 수 있는 방법 두 가지를 소개하도록 하겠다.</p>
+<p>첫 번째는 Cilium 이 제공하는 엔드포인트 라우팅 기능을 사용하는 것이다. 이 기능을 사용하면 아래와 같이 각각의 엔드포인트를 위한 라우팅 정보가 추가된다. 즉, 목적지 주소가 10.0.0.0/24 인 모든 패킷을 cilium_host 네트워크 장치를 통해 전달하는 것이 아니고, 각각의 목적지 주소에 해당하는 파드와 연결된 네트워크 장치로 패킷을 바로 전달해버리는 것이다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> route -n</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Kernel</span></span><span class="z-meta z-function-call z-arguments z-shell"> IP routing table</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Destination</span></span><span class="z-meta z-function-call z-arguments z-shell">     Gateway         Genmask         Flags Metric Ref    Use Iface</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">0.0.0.0</span></span><span class="z-meta z-function-call z-arguments z-shell">         172.26.50.1     0.0.0.0         UG    0      0        0 eno1</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">10.0.0.0</span></span><span class="z-meta z-function-call z-arguments z-shell">        10.0.0.253      255.255.255.0   UG    0      0        0 cilium_host</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">10.0.0.40</span></span><span class="z-meta z-function-call z-arguments z-shell">       0.0.0.0         255.255.255.255 UH    0      0        0 lxc3b28c7d86cd3</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">10.0.0.66</span></span><span class="z-meta z-function-call z-arguments z-shell">       0.0.0.0         255.255.255.255 UH    0      0        0 lxc_health</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">10.0.0.244</span></span><span class="z-meta z-function-call z-arguments z-shell">      0.0.0.0         255.255.255.255 UH    0      0        0 lxcd27b1006c4c8</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">10.0.0.253</span></span><span class="z-meta z-function-call z-arguments z-shell">      0.0.0.0         255.255.255.255 UH    0      0        0 cilium_host</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">10.0.1.0</span></span><span class="z-meta z-function-call z-arguments z-shell">        172.26.50.201   255.255.255.0   UG    0      0        0 eno1</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">172.26.50.0</span></span><span class="z-meta z-function-call z-arguments z-shell">     0.0.0.0         255.255.255.0   U     0      0        0 eno1</span>
+</span></code></pre>
+<p>아래와 같이 파드(coredns)의 주소인 10.0.0.40 이 lxc3b28c7d86cd3 네트워크 장치로 바로 전달되는 라우팅 정보를 확인할 수 있다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> kubectl get pods -o wide -n kube-system</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">NAMESPACE</span></span><span class="z-meta z-function-call z-arguments z-shell">     NAME                              READY   STATUS    RESTARTS   AGE   IP              NODE    NOMINATED NODE   READINESS GATES</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">kube-system</span></span><span class="z-meta z-function-call z-arguments z-shell">   coredns-749558f7dd-d96rn          1/1     Running   0          82s   10.0.0.40       node0   <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>none<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>           <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>none<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">kube-system</span></span><span class="z-meta z-function-call z-arguments z-shell">   coredns-749558f7dd-dhfdw          1/1     Running   0          82s   10.0.0.244      node0   <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>none<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>           <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>none<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>
+</span></span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> ip route get 10.0.0.40</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">10.0.0.40</span></span><span class="z-meta z-function-call z-arguments z-shell"> dev lxc3b28c7d86cd3 src 172.26.50.200 uid 0</span>
+</span></code></pre>
+<p>두 번째는 systemd-sysctl 이 사용하는 기본 설정을 변경해버리는 것이다. lxc 로 시작되는 이름을 가진 모든 네트워크 장치의 RPFilter 를 사용하지 않도록 설정해두면 된다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> cat /etc/sysctl.d/99-override_cilium_rp_filter.conf</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-variable z-other z-readwrite z-assignment z-shell">net.ipv4.conf.lxc*.rp_filter</span><span class="z-keyword z-operator z-assignment z-shell">=</span><span class="z-string z-unquoted z-shell">0</span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> sysctl net.ipv4.conf.lxc3b28c7d86cd3.rp_filter</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">net.ipv4.conf.lxc3b28c7d86cd3.rp_filter</span></span><span class="z-meta z-function-call z-arguments z-shell"> = 0</span>
+</span></code></pre>
+<p>여기까지 RPFilter 로 인해 발생하는 문제와 해결책에 대해 살펴보았다.</p>
+
+      <nav>
+        <div>
+          <a href="https://haruband.github.io/k8s-qos-memory/">&#8249; [K8S] 메모리 QoS 지원 분석</a>
+        </div>
+        <div>
+          <a href="https://haruband.github.io/k8s-cgroupv2-privatens/"> [K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석 &#8250;</a>
+        </div>
+      </nav>
+    </article>
+
+    <div class="sblock">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/k8s/">Series</a><br>
+
+          
+          
+      <a href="https://haruband.github.io/k8s-cni-vxlan/">[K8S&#x2F;Cilium] VXLAN 기반 Tunneling Datapath 기법</a><br>
+
+          
+            <details>
+              <summary>More...</summary>
+            </details>
+            <div class="hidden_li">
+                <a href="https://haruband.github.io/k8s-cni-ipvlan/">[K8S&#x2F;Cilium] IPVLAN 기반 Routing Datapath 기법</a><br>
+                <a href="https://haruband.github.io/k8s-cni-service/">[K8S&#x2F;Cilium] ClusterIP 서비스</a><br>
+                <a href="https://haruband.github.io/k8s-cni-nodeport/">[K8S&#x2F;Cilium] NodePort 서비스</a><br>
+                <a href="https://haruband.github.io/k8s-cni-dsr/">[K8S&#x2F;Cilium] DSR (Direct Server Return)</a><br>
+                <a href="https://haruband.github.io/k8s-cni-redirect/">[K8S&#x2F;Cilium] bpf_redirect_peer()&#x2F;bpf_redirect_neigh()</a><br>
+                <a href="https://haruband.github.io/k8s-cni-routing-benchmark/">[K8S&#x2F;Cilium] 라우팅 기법 성능 평가</a><br>
+                <a href="https://haruband.github.io/k8s-cni-ipvlan-redirect-bug/">[K8S&#x2F;Cilium] IPVLAN 기반 Cilium 의 NodePort 버그 분석</a><br>
+                <a href="https://haruband.github.io/k8s-cni-loadbalancing/">[K8S&#x2F;Cilium] Socket-Based LoadBalancing 기법</a><br>
+                <a href="https://haruband.github.io/k8s-cni-servicemesh-proxy/">[K8S&#x2F;Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy)</a><br>
+                <a href="https://haruband.github.io/k8s-vxlan-forbidden/">[K8S] VXLAN 사용 불가 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-nat-loopback-snat/">[K8S] NAT 루프백 문제 분석 (SNAT)</a><br>
+                <a href="https://haruband.github.io/k8s-kafka-optimize-loadbalancer/">[K8S] 네트워크 최적화 (MetalLB)</a><br>
+                <a href="https://haruband.github.io/k8s-proxy-bypass/">[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-memory-swap/">[K8S] 메모리 스와핑 지원 분석</a><br>
+            </div>
+
+          
+
+          
+            <a href="https://haruband.github.io/k8s-nat-loopback-lrp/">[K8S] NAT 루프백 문제 분석 (LRP)</a><br>
+            <a href="https://haruband.github.io/k8s-cgroupv2-privatens/">[K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석</a><br>
+
+          
+            
+      <a class="scur" href="https://haruband.github.io/k8s-rpfilter/">[K8S] Cilium RPFilter 문제 분석</a><br>
+    
+
+          
+            <a href="https://haruband.github.io/k8s-qos-memory/">[K8S] 메모리 QoS 지원 분석</a><br>
+          
+            <a href="https://haruband.github.io/k8s-networkpolicy/">[K8S] Cilium NetworkPolicy 문제 분석</a><br>
+          
+            <details>
+              <summary>More...</summary>
+            </details>
+            <div class="hidden_li">
+                <a href="https://haruband.github.io/k8s-spark-optimize/">[K8S&#x2F;Spark] 성능 최적화</a><br>
+                <a href="https://haruband.github.io/k8s-spark-optimize-swap/">[K8S&#x2F;Spark] 메모리 최적화 (Swap)</a><br>
+                <a href="https://haruband.github.io/k8s-istio-ambientmesh/">[K8S&#x2F;Istio] AmbientMesh 소개</a><br>
+                <a href="https://haruband.github.io/k8s-istio-ambientmesh-flow/">[K8S&#x2F;Istio] AmbientMesh 동작 과정 분석</a><br>
+                <a href="https://haruband.github.io/k8s-istio-ambientmesh-rpfilter/">[K8S&#x2F;Istio] AmbientMesh RPFilter 문제 분석</a><br>
+            </div>
+        
+      <a href="https://haruband.github.io/k8s-istio-ambientmesh-cilium/">[K8S&#x2F;Istio] AmbientMesh Cilium 문제 분석</a><br>
+
+        
+      </div>
+      <div class="blockdiv sticky">
+        <a class="b s150" href="#">Index</a>
+        <div>
+          <a href="#eoddeohan-munjega-balsaenghaessneunga">어떠한 문제가 발생했는가???</a>
+        </div>
+        <div>
+          <a href="#eoddeohge-munjega-balsaenghaessneunga">어떻게 문제가 발생했는가???</a>
+        </div>
+        <div>
+          <a href="#eoddeohge-munjereul-haegyeolhaessneunga">어떻게 문제를 해결했는가???</a>
+        </div>
+      </div>
+    </div>
+  </main>
+  <footer>
+    <div class="c">
+      <nav class="tpad"><div><a href="https://www.linkedin.com/in/inhyeok-kim-7620a0b0/" target="_blank" title="LinkedIn"><i type="Button" class="svg linkedin" title="LinkedIn"></i></a><a href="https://github.com/haruband/" target="_blank" title="Github"><i type="Button" class="svg github" title="Github"></i></a></div></nav>
+      <nav class="vpad">
+        <a class="rpad s90" href="https://haruband.github.io/about/"> About </a>
+        <a class="rpad s90" href="https://haruband.github.io/contact/"> Contact </a>
+      </nav>
+      <p class="s80"> &copy; <span id="year">2025</span> CodeBook</p>
+      <p class="s80">Powered by <a href="https://www.getzola.org/" target="_blank">Zola</a> & <a href="https://github.com/jieiku/abridge/" target="_blank">Abridge</a></p>
+    </div>
+  </footer><span class="topout">
+<span class="topleft"> </span><a href="#" class="top" title="Back to Top"><i class="svgs svgh angu"></i></a>
+</span>
+</body>
+</html>

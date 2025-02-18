@@ -1,0 +1,331 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://haruband.github.io/js/theme.min.js" integrity="sha384-pb++s6uBRKaQv+iAXpgA/H3IlpLZdO14tTwuCI7uXmz4aaZdByoCcM+6BhynMq/1"></script>
+  <link rel="stylesheet" href="https://haruband.github.io/abridge.css?h=98ebdf6fd3d59dfb2edf" />
+  <meta charset="utf-8" />
+  <meta http-equiv="x-ua-compatible" content="ie=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="base" content="https://haruband.github.io" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#333333" />
+  <meta name="msapplication-TileColor" content="#333333" />
+  <link rel="manifest" href="https://haruband.github.io/manifest.min.json" />
+  <link rel="mask-icon" href="https://haruband.github.io/safari-pinned-tab.svg" color="#ff9900" />
+  <link rel="icon" type="image/svg+xml" href="https://haruband.github.io/favicon.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="https://haruband.github.io/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="https://haruband.github.io/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="https://haruband.github.io/favicon-16x16.png" />
+  <link rel="alternate" type="application/atom+xml" title="CodeBook Atom Feed" href="https://haruband.github.io/atom.xml" />
+  <meta name="robots" content="index, follow" />
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <title>[K8S] Cilium NetworkPolicy 문제 분석 | CodeBook</title>
+  <meta name="author" content="Inhyeok Kim" />
+  <meta name="copyright" content="CodeBook" />
+  <meta name="description" content="Haruband&#x27;s TechBlog" />
+  <link rel="canonical" href="https://haruband.github.io/k8s-networkpolicy/" />
+  <meta name="keywords" content="Arrow, Datafusion, Kubernetes" />
+  <meta name="google-site-verification" content="Your Google Site verification code." />
+  <meta name="msvalidate.01" content="Your Bing Site verification code." />
+  <meta property="og:url" content="https://haruband.github.io/k8s-networkpolicy/" />
+  <meta name="twitter:url" content="https://haruband.github.io/k8s-networkpolicy/" />
+  <meta property="og:description" content="Haruband&#x27;s TechBlog" />
+  <meta name="twitter:description" content="Haruband&#x27;s TechBlog" />
+  <meta property="og:title" content="[K8S] Cilium NetworkPolicy 문제 분석 | CodeBook" />
+  <meta name="twitter:title" content="[K8S] Cilium NetworkPolicy 문제 분석 | CodeBook" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:site_name" content="CodeBook" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:type" content="website" />
+  <meta property="og:updated_time" content="2021-04-29" />
+  <meta name="twitter:site" content="@your-user-name" />
+  <meta name="twitter:creator" content="@your-user-name" />
+  <script defer src="https://haruband.github.io/js/abridge.min.js?h=e0f9a881a665c86cce9c" integrity="sha384-QF67y7RnPkuDrJNQqn3/7nYxqxWkW/qHI7zN0WTES1aXbf+TotoByRBb835fUE6U"></script>
+  <noscript><link rel="stylesheet" href="https://haruband.github.io/nojs.css" /></noscript>
+</head>
+<body>
+  <header>
+    <nav>
+      <div><big><a href="https://haruband.github.io" title="CodeBook">CodeBook</a></big></div>
+      <div>
+
+        <div>
+          <ul><li><a class="s110" href="https://haruband.github.io/archive/"> Posts </a></li><li><a class="s110" href="https://haruband.github.io/tags/"> Tags </a></li><li><i type="reset" id="mode" class="js svgs adjust"></i></ul>
+        </div>
+
+        <div>
+          <div>
+            <form autocomplete=off class="js" name="goSearch" id="searchbox">
+              <div class="searchd">
+                <input id="searchinput" type="text" placeholder="Search" title="Search" />
+                <button type="submit" title="Search" class="svgs svgm search"></button>
+              </div>
+              <div class="results"><div id="suggestions"></div></div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </nav>
+  </header>
+  <main>
+    <article>
+      <h1><a href="https://haruband.github.io/k8s-networkpolicy/">[K8S] Cilium NetworkPolicy 문제 분석</a></h1>
+
+      <span class="s95"> Inhyeok Kim <span class="rpad"></span> April 29, 2021 <span class="rpad"></span>Updated: April 29, 2021 <span class="rpad"></span> #<a href="https://haruband.github.io/tags/k8s/">K8S</a>  #<a href="https://haruband.github.io/tags/kubernetes/">Kubernetes</a>  #<a href="https://haruband.github.io/tags/cilium/">Cilium</a> </span>
+
+    
+        <div class="block">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/k8s/">K8S (Series)</a><br>
+            <a href="https://haruband.github.io/k8s-cni-vxlan/">[K8S&#x2F;Cilium] VXLAN 기반 Tunneling Datapath 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-ipvlan/">[K8S&#x2F;Cilium] IPVLAN 기반 Routing Datapath 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-service/">[K8S&#x2F;Cilium] ClusterIP 서비스</a><br>
+            <a href="https://haruband.github.io/k8s-cni-nodeport/">[K8S&#x2F;Cilium] NodePort 서비스</a><br>
+            <a href="https://haruband.github.io/k8s-cni-dsr/">[K8S&#x2F;Cilium] DSR (Direct Server Return)</a><br>
+            <a href="https://haruband.github.io/k8s-cni-redirect/">[K8S&#x2F;Cilium] bpf_redirect_peer()&#x2F;bpf_redirect_neigh()</a><br>
+            <a href="https://haruband.github.io/k8s-cni-routing-benchmark/">[K8S&#x2F;Cilium] 라우팅 기법 성능 평가</a><br>
+            <a href="https://haruband.github.io/k8s-cni-ipvlan-redirect-bug/">[K8S&#x2F;Cilium] IPVLAN 기반 Cilium 의 NodePort 버그 분석</a><br>
+            <a href="https://haruband.github.io/k8s-cni-loadbalancing/">[K8S&#x2F;Cilium] Socket-Based LoadBalancing 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-servicemesh-proxy/">[K8S&#x2F;Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy)</a><br>
+            <a href="https://haruband.github.io/k8s-vxlan-forbidden/">[K8S] VXLAN 사용 불가 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-nat-loopback-snat/">[K8S] NAT 루프백 문제 분석 (SNAT)</a><br>
+            <a href="https://haruband.github.io/k8s-kafka-optimize-loadbalancer/">[K8S] 네트워크 최적화 (MetalLB)</a><br>
+            <a href="https://haruband.github.io/k8s-proxy-bypass/">[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-memory-swap/">[K8S] 메모리 스와핑 지원 분석</a><br>
+            <a href="https://haruband.github.io/k8s-nat-loopback-lrp/">[K8S] NAT 루프백 문제 분석 (LRP)</a><br>
+            <a href="https://haruband.github.io/k8s-cgroupv2-privatens/">[K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-rpfilter/">[K8S] Cilium RPFilter 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-qos-memory/">[K8S] 메모리 QoS 지원 분석</a><br>
+            <a class="scur" href="https://haruband.github.io/k8s-networkpolicy/">[K8S] Cilium NetworkPolicy 문제 분석</a><br> 
+          
+            <a href="https://haruband.github.io/k8s-spark-optimize/">[K8S&#x2F;Spark] 성능 최적화</a><br>
+            <a href="https://haruband.github.io/k8s-spark-optimize-swap/">[K8S&#x2F;Spark] 메모리 최적화 (Swap)</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh/">[K8S&#x2F;Istio] AmbientMesh 소개</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh-flow/">[K8S&#x2F;Istio] AmbientMesh 동작 과정 분석</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh-rpfilter/">[K8S&#x2F;Istio] AmbientMesh RPFilter 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh-cilium/">[K8S&#x2F;Istio] AmbientMesh Cilium 문제 분석</a><br>
+      </div>
+    </div>
+
+
+<p>오늘은 최근 회사에서 GitOps 를 적용하기 위해 ArgoCD 를 설치하던 중 발생했던 네트워크 정책(NetworkPolicy) 관련된 문제에 대해 살펴보고자 한다.</p>
+<h2 id="eoddeohan-munjega-balsaenghaessneunga">어떠한 문제가 발생했는가???</h2>
+<p>Helm 을 이용하여 ArgoCD 를 설치하였는데 아래와 같이 두 개의 파드만 동작하지 않는 문제가 발생하였다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> kubectl get pods -n argocd -o wide</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">NAME</span></span><span class="z-meta z-function-call z-arguments z-shell">                                  READY   STATUS             RESTARTS       AGE   IP           NODE    NOMINATED NODE   READINESS GATES</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">argocd-application-controller-0</span></span><span class="z-meta z-function-call z-arguments z-shell">       0/1     CrashLoopBackOff   29 (42s ago</span><span class="z-meta z-function-call z-shell"></span>)   <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">88m</span></span><span class="z-meta z-function-call z-arguments z-shell">   10.0.1.185   node1   <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>none<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>           <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>none<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">argocd-dex-server-6f7fd44b9d-s6rrk</span></span><span class="z-meta z-function-call z-arguments z-shell">    1/1     Running            0              88m   10.0.1.94    node1   <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>none<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>           <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>none<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">argocd-redis-84558bbb99-n6tmz</span></span><span class="z-meta z-function-call z-arguments z-shell">         1/1     Running            0              88m   10.0.1.159   node1   <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>none<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>           <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>none<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">argocd-repo-server-784b48858f-4zx42</span></span><span class="z-meta z-function-call z-arguments z-shell">   0/1     CrashLoopBackOff   27 (87s ago</span><span class="z-meta z-function-call z-shell"></span>)   <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">88m</span></span><span class="z-meta z-function-call z-arguments z-shell">   10.0.1.166   node1   <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>none<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>           <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>none<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">argocd-server-74bf76596b-zgtgq</span></span><span class="z-meta z-function-call z-arguments z-shell">        1/1     Running            0              88m   10.0.1.184   node1   <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>none<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>           <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>none<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>
+</span></span></code></pre>
+<p>아래와 같이 동작 확인(readiness/liveness)이 제대로 되지 않는 문제였고, 직접 호스트에서 확인해보니 파드로 네트워크 연결이 되지 않았다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> kubectl describe pods argocd-application-controller-0 -n argocd</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Name:</span></span><span class="z-meta z-function-call z-arguments z-shell">         argocd-application-controller-0</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Namespace:</span></span><span class="z-meta z-function-call z-arguments z-shell">    argocd</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Events:</span></span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Type</span></span><span class="z-meta z-function-call z-arguments z-shell">     Reason     Age                 From     Message</span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">----</span></span><span class="z-meta z-function-call z-arguments z-shell">     ------     ----                ----     -------</span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Warning</span></span><span class="z-meta z-function-call z-arguments z-shell">  Unhealthy  41m (x61 over 88m</span><span class="z-meta z-function-call z-shell"></span>)  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">kubelet</span></span><span class="z-meta z-function-call z-arguments z-shell">  Readiness probe failed: Get <span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>http://10.0.1.185:8082/healthz<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span>: context deadline exceeded (Client.Timeout exceeded while awaiting headers</span><span class="z-meta z-function-call z-shell"></span>)
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Normal</span></span><span class="z-meta z-function-call z-arguments z-shell">   Pulled     17m (x17 over 66m</span><span class="z-meta z-function-call z-shell"></span>)  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">kubelet</span></span><span class="z-meta z-function-call z-arguments z-shell">  (combined from similar events</span><span class="z-meta z-function-call z-shell"></span>)<span class="z-meta z-function-call z-shell"><span class="z-support z-function z-colon z-shell">:</span></span><span class="z-meta z-function-call z-arguments z-shell"> Successfully pulled image <span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>quay.io/argoproj/argocd:v2.2.2<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span> in 2.525708797s</span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Warning</span></span><span class="z-meta z-function-call z-arguments z-shell">  BackOff    2m (x302 over 77m</span><span class="z-meta z-function-call z-shell"></span>)  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">kubelet</span></span><span class="z-meta z-function-call z-arguments z-shell">  Back-off restarting failed container</span>
+</span></code></pre>
+<p>나머지 파드는 모두 잘 동작하는데 왜 두 개의 파드만 네트워크 연결이 안 되는 것일까?</p>
+<p>우선 라우팅 정책을 살펴보도록 하자. 아래와 같이 라우팅 정책에는 문제가 없었다. Cilium 이 제공하는 엔드포인트 라우팅을 사용 중이기 때문에 VETH 마다 라우팅 정책이 설정되어 있다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> route -n</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Kernel</span></span><span class="z-meta z-function-call z-arguments z-shell"> IP routing table</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Destination</span></span><span class="z-meta z-function-call z-arguments z-shell">     Gateway         Genmask         Flags Metric Ref    Use Iface</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">0.0.0.0</span></span><span class="z-meta z-function-call z-arguments z-shell">         172.26.50.1     0.0.0.0         UG    0      0        0 eno1</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">10.0.0.0</span></span><span class="z-meta z-function-call z-arguments z-shell">        172.26.50.200   255.255.255.0   UG    0      0        0 eno1</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">10.0.1.0</span></span><span class="z-meta z-function-call z-arguments z-shell">        10.0.1.106      255.255.255.0   UG    0      0        0 cilium_host</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">10.0.1.184</span></span><span class="z-meta z-function-call z-arguments z-shell">      0.0.0.0         255.255.255.255 UH    0      0        0 lxc5ac784021fb3</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">10.0.1.185</span></span><span class="z-meta z-function-call z-arguments z-shell">      0.0.0.0         255.255.255.255 UH    0      0        0 lxcfae959439981</span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> ip route get 10.0.1.185</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">10.0.1.185</span></span><span class="z-meta z-function-call z-arguments z-shell"> dev lxcfae959439981 src 172.26.50.201 uid 0</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">cache</span></span>
+</span></code></pre>
+<p>다음으로 네트워크 정책을 살펴보도록 하자. 아래는 ArgoCD 에서 문제가 발생한 파드를 위해 제공하는 네트워크 정책과 Cilium 이 해당 정책을 eBPF 를 이용하여 적용한 내용이다. 해당 네트워크 정책은 8082/TCP 포트로만 접근을 허용하고 있고, Cilium 이 적용한 정책 테이블의 ID(Identity) 값을 보면 모든 파드와 호스트에서만 접근을 허용하고 있다. (Host 의 ID 가 1 이다.)</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> kubectl describe networkpolicy argocd-application-controller-network-policy -n argocd</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Name:</span></span><span class="z-meta z-function-call z-arguments z-shell">         argocd-application-controller-network-policy</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Namespace:</span></span><span class="z-meta z-function-call z-arguments z-shell">    argocd</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Spec:</span></span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">PodSelector:</span></span><span class="z-meta z-function-call z-arguments z-shell">     app.kubernetes.io/name=argocd-application-controller</span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Allowing</span></span><span class="z-meta z-function-call z-arguments z-shell"> ingress traffic:</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">To</span></span><span class="z-meta z-function-call z-arguments z-shell"> Port: 8082/TCP</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">From:</span></span>
+</span><span class="z-source z-shell z-bash">      <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">NamespaceSelector:</span></span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>none<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>
+</span></span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Not</span></span><span class="z-meta z-function-call z-arguments z-shell"> affecting egress traffic</span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Policy</span></span><span class="z-meta z-function-call z-arguments z-shell"> Types: Ingress</span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> cilium node1 cilium bpf policy get -n 211</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Defaulted</span></span><span class="z-meta z-function-call z-arguments z-shell"> container <span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>cilium-agent<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span> out of: cilium-agent, mount-cgroup (init</span><span class="z-meta z-function-call z-shell"></span>)<span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">,</span></span><span class="z-meta z-function-call z-arguments z-shell"> clean-cilium-state (init</span><span class="z-meta z-function-call z-shell"></span>)
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">POLICY</span></span><span class="z-meta z-function-call z-arguments z-shell">   DIRECTION   IDENTITY   PORT/PROTO   PROXY PORT   BYTES    PACKETS</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Allow</span></span><span class="z-meta z-function-call z-arguments z-shell">    Ingress     1          ANY          NONE         60201    687</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Allow</span></span><span class="z-meta z-function-call z-arguments z-shell">    Ingress     4086       8082/TCP     NONE         0        0</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Allow</span></span><span class="z-meta z-function-call z-arguments z-shell">    Ingress     11803      8082/TCP     NONE         0        0</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Allow</span></span><span class="z-meta z-function-call z-arguments z-shell">    Ingress     14155      8082/TCP     NONE         0        0</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Allow</span></span><span class="z-meta z-function-call z-arguments z-shell">    Ingress     15435      8082/TCP     NONE         0        0</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Allow</span></span><span class="z-meta z-function-call z-arguments z-shell">    Ingress     19965      8082/TCP     NONE         0        0</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Allow</span></span><span class="z-meta z-function-call z-arguments z-shell">    Ingress     60530      8082/TCP     NONE         0        0</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Allow</span></span><span class="z-meta z-function-call z-arguments z-shell">    Egress      0          ANY          NONE         446824   3633</span>
+</span></code></pre>
+<p>기본적인 설정에는 별 문제가 없어보이니 Cilium 이 제공하는 모니터링 기능을 이용하여 확인해보자.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> cilium node1 cilium monitor</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Policy</span></span><span class="z-meta z-function-call z-arguments z-shell"> verdict log: flow 0x48357586 local EP ID 211, remote ID world, proto 6, ingress, action deny, match none, 172.26.50.201:60556 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> <span class="z-constant z-numeric z-integer z-decimal z-file-descriptor z-shell">10</span>.0.1.185:8082 tcp SYN</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">xx</span></span><span class="z-meta z-function-call z-arguments z-shell"> drop (Policy denied</span><span class="z-meta z-function-call z-shell"></span>) <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">flow</span></span><span class="z-meta z-function-call z-arguments z-shell"> 0x48357586 to endpoint 211, , identity world-<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span><span class="z-constant z-numeric z-integer z-decimal z-file-descriptor z-shell">15435</span>: 172.26.50.201:60556 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> <span class="z-constant z-numeric z-integer z-decimal z-file-descriptor z-shell">10</span>.0.1.185:8082 tcp SYN</span>
+</span></code></pre>
+<p>위에서 볼 수 있는 것처럼 호스트에서 파드로 보낸 패킷이 Cilium 에 의해 드롭되고 있었다. 이유는 해당 패킷의 ID 가 World 로 되어있기 때문이다. (World 는 클러스터 외부를 의미하고, ID 는 2 이다.) 분명히 호스트(Host)에서 패킷을 보냈는데 왜 클러스터 외부(World)에서 보낸 것으로 인식하는 것일까? 그리고 왜 두 개의 파드만 동작하지 않고 나머지 파드는 동작하는 것일까?</p>
+<p>우선 두 번째 의문점을 해결하기 위해 동작 중인 파드가 사용 중인 네트워크 정책을 살펴보자.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> kubectl describe networkpolicy argocd-server-network-policy -n argocd</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Name:</span></span><span class="z-meta z-function-call z-arguments z-shell">         argocd-server-network-policy</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Namespace:</span></span><span class="z-meta z-function-call z-arguments z-shell">    argocd</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Spec:</span></span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">PodSelector:</span></span><span class="z-meta z-function-call z-arguments z-shell">     app.kubernetes.io/name=argocd-server</span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Allowing</span></span><span class="z-meta z-function-call z-arguments z-shell"> ingress traffic:</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">To</span></span><span class="z-meta z-function-call z-arguments z-shell"> Port: <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>any<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> (traffic allowed to all ports</span><span class="z-meta z-function-call z-shell"></span>)
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">From:</span></span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>any<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> (traffic not restricted by source</span><span class="z-meta z-function-call z-shell"></span>)
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Not</span></span><span class="z-meta z-function-call z-arguments z-shell"> affecting egress traffic</span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Policy</span></span><span class="z-meta z-function-call z-arguments z-shell"> Types: Ingress</span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> cilium node1 cilium bpf policy get -n 1562</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Defaulted</span></span><span class="z-meta z-function-call z-arguments z-shell"> container <span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>cilium-agent<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span> out of: cilium-agent, mount-cgroup (init</span><span class="z-meta z-function-call z-shell"></span>)<span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">,</span></span><span class="z-meta z-function-call z-arguments z-shell"> clean-cilium-state (init</span><span class="z-meta z-function-call z-shell"></span>)
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">POLICY</span></span><span class="z-meta z-function-call z-arguments z-shell">   DIRECTION   IDENTITY   PORT/PROTO   PROXY PORT   BYTES     PACKETS</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Allow</span></span><span class="z-meta z-function-call z-arguments z-shell">    Ingress     0          ANY          NONE         1024489   8391</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Allow</span></span><span class="z-meta z-function-call z-arguments z-shell">    Ingress     1          ANY          NONE         71946     649</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Allow</span></span><span class="z-meta z-function-call z-arguments z-shell">    Egress      0          ANY          NONE         1581964   11146</span>
+</span></code></pre>
+<p>위에서 볼 수 있는 것처럼 동작 중인 파드는 네트워크 정책이 비어있기 때문에 모든 접속을 허용하고 있다. (Cilium 은 모든 접속을 허용하기 위해 ID 가 0 인 항목을 추가하였다.) 그래서 아래와 같이 호스트에서 보낸 패킷의 ID 가 World 로 인식되어도 문제없이 동작하는 것이다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> cilium node1 cilium monitor</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">-</span></span><span class="z-meta z-function-call z-arguments z-shell"><span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> endpoint 1562 flow 0x76403eb7 , identity world-<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span><span class="z-constant z-numeric z-integer z-decimal z-file-descriptor z-shell">11803</span> state new ifindex 0 orig-ip 172.26.50.201: 172.26.50.201:56134 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> <span class="z-constant z-numeric z-integer z-decimal z-file-descriptor z-shell">10</span>.0.1.184:8080 tcp SYN</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">-</span></span><span class="z-meta z-function-call z-arguments z-shell"><span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> stack flow 0xe8858480 , identity 11803-<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>host state reply ifindex 0 orig-ip 0.0.0.0: 10.0.1.184:8080 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> <span class="z-constant z-numeric z-integer z-decimal z-file-descriptor z-shell">172</span>.26.50.201:56134 tcp SYN, ACK</span>
+</span></code></pre>
+<p>그럼 이제 첫 번째 의문점인 왜 Cilium 이 호스트에서 보낸 패킷을 클러스터 외부에서 보낸 패킷으로 인식하는지 살펴보자.</p>
+<h2 id="eoddeohge-munjega-balsaenghaessneunga">어떻게 문제가 발생했는가???</h2>
+<p>Cilium 은 0xc00 이 마킹되어 있는 패킷을 호스트에서 보낸 패킷으로 인식하는데, 호스트에서 보낸 패킷에 0xc00 을 마킹하기 위해 IPTables 를 사용하고 있다. 그런데 IPTables 에 필요한 정책을 추가하는 설정(--install-iptables-rules)이 해제되어 있어서 제대로 마킹이 되지 않았던 것이다.</p>
+<h2 id="eoddeohge-munjereul-haegyeolhaessneunga">어떻게 문제를 해결했는가???</h2>
+<p>해결책은 간단하다. 필요한 설정(--install-iptables-rules)을 추가하면 된다. 해당 설정을 추가하고 IPTables 에 추가된 정책을 살펴보자.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> iptables -t filter -L</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Chain</span></span><span class="z-meta z-function-call z-arguments z-shell"> OUTPUT (policy ACCEPT</span><span class="z-meta z-function-call z-shell"></span>)
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">target</span></span><span class="z-meta z-function-call z-arguments z-shell">     prot opt source               destination</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">CILIUM_OUTPUT</span></span><span class="z-meta z-function-call z-arguments z-shell">  all<span class="z-keyword z-operator z-end-of-options z-shell">  --</span></span><span class="z-meta z-function-call z-arguments z-shell">  anywhere             anywhere             /<span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span> cilium-feeder: CILIUM_OUTPUT <span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span>/</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">KUBE-FIREWALL</span></span><span class="z-meta z-function-call z-arguments z-shell">  all<span class="z-keyword z-operator z-end-of-options z-shell">  --</span></span><span class="z-meta z-function-call z-arguments z-shell">  anywhere             anywhere</span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Chain</span></span><span class="z-meta z-function-call z-arguments z-shell"> CILIUM_OUTPUT (1 references</span><span class="z-meta z-function-call z-shell"></span>)
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">target</span></span><span class="z-meta z-function-call z-arguments z-shell">     prot opt source               destination</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">ACCEPT</span></span><span class="z-meta z-function-call z-arguments z-shell">     all<span class="z-keyword z-operator z-end-of-options z-shell">  --</span></span><span class="z-meta z-function-call z-arguments z-shell">  anywhere             anywhere             mark match 0xa00/0xfffffeff /<span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span> cilium: ACCEPT for proxy return traffic <span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span>/</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">MARK</span></span><span class="z-meta z-function-call z-arguments z-shell">       all<span class="z-keyword z-operator z-end-of-options z-shell">  --</span></span><span class="z-meta z-function-call z-arguments z-shell">  anywhere             anywhere             mark match ! 0xe00/0xf00 mark match ! 0xd00/0xf00 mark match ! 0xa00/0xe00 /<span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span> cilium: host-<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>any mark as from host <span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span>/ MARK xset 0xc00/0xf00</span>
+</span></code></pre>
+<p>호스트에서 직접 보내는 패킷에 0xc00 을 마킹하는 룰(CILIUM_OUTPUT 체인의 2 번째)을 볼 수 있다. 그리고 다시 Cilium 으로 모니터링을 해보면 결과는 아래와 같다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> cilium node1 cilium monitor</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">-</span></span><span class="z-meta z-function-call z-arguments z-shell"><span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> endpoint 1999 flow 0x6cac68b2 , identity host-<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span><span class="z-constant z-numeric z-integer z-decimal z-file-descriptor z-shell">15435</span> state established ifindex 0 orig-ip 172.26.50.201: 172.26.50.201:43164 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> <span class="z-constant z-numeric z-integer z-decimal z-file-descriptor z-shell">10</span>.0.1.185:8082 tcp ACK</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">-</span></span><span class="z-meta z-function-call z-arguments z-shell"><span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> stack flow 0x9628293d , identity 15435-<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>host state reply ifindex 0 orig-ip 0.0.0.0: 10.0.1.185:8082 -<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span> <span class="z-constant z-numeric z-integer z-decimal z-file-descriptor z-shell">172</span>.26.50.201:43164 tcp ACK</span>
+</span></code></pre>
+<p>호스트에서 보낸 패킷의 ID 가 정상적으로 Host 로 인식되는 것을 볼 수 있다.</p>
+
+      <nav>
+        <div>
+          <a href="https://haruband.github.io/k8s-spark-optimize/">&#8249; [K8S&#x2F;Spark] 성능 최적화</a>
+        </div>
+        <div>
+          <a href="https://haruband.github.io/k8s-qos-memory/"> [K8S] 메모리 QoS 지원 분석 &#8250;</a>
+        </div>
+      </nav>
+    </article>
+
+    <div class="sblock">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/k8s/">Series</a><br>
+
+          
+          
+      <a href="https://haruband.github.io/k8s-cni-vxlan/">[K8S&#x2F;Cilium] VXLAN 기반 Tunneling Datapath 기법</a><br>
+
+          
+            <details>
+              <summary>More...</summary>
+            </details>
+            <div class="hidden_li">
+                <a href="https://haruband.github.io/k8s-cni-ipvlan/">[K8S&#x2F;Cilium] IPVLAN 기반 Routing Datapath 기법</a><br>
+                <a href="https://haruband.github.io/k8s-cni-service/">[K8S&#x2F;Cilium] ClusterIP 서비스</a><br>
+                <a href="https://haruband.github.io/k8s-cni-nodeport/">[K8S&#x2F;Cilium] NodePort 서비스</a><br>
+                <a href="https://haruband.github.io/k8s-cni-dsr/">[K8S&#x2F;Cilium] DSR (Direct Server Return)</a><br>
+                <a href="https://haruband.github.io/k8s-cni-redirect/">[K8S&#x2F;Cilium] bpf_redirect_peer()&#x2F;bpf_redirect_neigh()</a><br>
+                <a href="https://haruband.github.io/k8s-cni-routing-benchmark/">[K8S&#x2F;Cilium] 라우팅 기법 성능 평가</a><br>
+                <a href="https://haruband.github.io/k8s-cni-ipvlan-redirect-bug/">[K8S&#x2F;Cilium] IPVLAN 기반 Cilium 의 NodePort 버그 분석</a><br>
+                <a href="https://haruband.github.io/k8s-cni-loadbalancing/">[K8S&#x2F;Cilium] Socket-Based LoadBalancing 기법</a><br>
+                <a href="https://haruband.github.io/k8s-cni-servicemesh-proxy/">[K8S&#x2F;Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy)</a><br>
+                <a href="https://haruband.github.io/k8s-vxlan-forbidden/">[K8S] VXLAN 사용 불가 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-nat-loopback-snat/">[K8S] NAT 루프백 문제 분석 (SNAT)</a><br>
+                <a href="https://haruband.github.io/k8s-kafka-optimize-loadbalancer/">[K8S] 네트워크 최적화 (MetalLB)</a><br>
+                <a href="https://haruband.github.io/k8s-proxy-bypass/">[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-memory-swap/">[K8S] 메모리 스와핑 지원 분석</a><br>
+                <a href="https://haruband.github.io/k8s-nat-loopback-lrp/">[K8S] NAT 루프백 문제 분석 (LRP)</a><br>
+                <a href="https://haruband.github.io/k8s-cgroupv2-privatens/">[K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석</a><br>
+            </div>
+
+          
+
+          
+            <a href="https://haruband.github.io/k8s-rpfilter/">[K8S] Cilium RPFilter 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-qos-memory/">[K8S] 메모리 QoS 지원 분석</a><br>
+
+          
+            
+      <a class="scur" href="https://haruband.github.io/k8s-networkpolicy/">[K8S] Cilium NetworkPolicy 문제 분석</a><br>
+    
+
+          
+            <a href="https://haruband.github.io/k8s-spark-optimize/">[K8S&#x2F;Spark] 성능 최적화</a><br>
+          
+            <a href="https://haruband.github.io/k8s-spark-optimize-swap/">[K8S&#x2F;Spark] 메모리 최적화 (Swap)</a><br>
+          
+            <details>
+              <summary>More...</summary>
+            </details>
+            <div class="hidden_li">
+                <a href="https://haruband.github.io/k8s-istio-ambientmesh/">[K8S&#x2F;Istio] AmbientMesh 소개</a><br>
+                <a href="https://haruband.github.io/k8s-istio-ambientmesh-flow/">[K8S&#x2F;Istio] AmbientMesh 동작 과정 분석</a><br>
+                <a href="https://haruband.github.io/k8s-istio-ambientmesh-rpfilter/">[K8S&#x2F;Istio] AmbientMesh RPFilter 문제 분석</a><br>
+            </div>
+        
+      <a href="https://haruband.github.io/k8s-istio-ambientmesh-cilium/">[K8S&#x2F;Istio] AmbientMesh Cilium 문제 분석</a><br>
+
+        
+      </div>
+      <div class="blockdiv sticky">
+        <a class="b s150" href="#">Index</a>
+        <div>
+          <a href="#eoddeohan-munjega-balsaenghaessneunga">어떠한 문제가 발생했는가???</a>
+        </div>
+        <div>
+          <a href="#eoddeohge-munjega-balsaenghaessneunga">어떻게 문제가 발생했는가???</a>
+        </div>
+        <div>
+          <a href="#eoddeohge-munjereul-haegyeolhaessneunga">어떻게 문제를 해결했는가???</a>
+        </div>
+      </div>
+    </div>
+  </main>
+  <footer>
+    <div class="c">
+      <nav class="tpad"><div><a href="https://www.linkedin.com/in/inhyeok-kim-7620a0b0/" target="_blank" title="LinkedIn"><i type="Button" class="svg linkedin" title="LinkedIn"></i></a><a href="https://github.com/haruband/" target="_blank" title="Github"><i type="Button" class="svg github" title="Github"></i></a></div></nav>
+      <nav class="vpad">
+        <a class="rpad s90" href="https://haruband.github.io/about/"> About </a>
+        <a class="rpad s90" href="https://haruband.github.io/contact/"> Contact </a>
+      </nav>
+      <p class="s80"> &copy; <span id="year">2025</span> CodeBook</p>
+      <p class="s80">Powered by <a href="https://www.getzola.org/" target="_blank">Zola</a> & <a href="https://github.com/jieiku/abridge/" target="_blank">Abridge</a></p>
+    </div>
+  </footer>
+</body>
+</html>

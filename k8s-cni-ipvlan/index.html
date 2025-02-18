@@ -1,0 +1,231 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://haruband.github.io/js/theme.min.js" integrity="sha384-pb++s6uBRKaQv+iAXpgA/H3IlpLZdO14tTwuCI7uXmz4aaZdByoCcM+6BhynMq/1"></script>
+  <link rel="stylesheet" href="https://haruband.github.io/abridge.css?h=98ebdf6fd3d59dfb2edf" />
+  <meta charset="utf-8" />
+  <meta http-equiv="x-ua-compatible" content="ie=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="base" content="https://haruband.github.io" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#333333" />
+  <meta name="msapplication-TileColor" content="#333333" />
+  <link rel="manifest" href="https://haruband.github.io/manifest.min.json" />
+  <link rel="mask-icon" href="https://haruband.github.io/safari-pinned-tab.svg" color="#ff9900" />
+  <link rel="icon" type="image/svg+xml" href="https://haruband.github.io/favicon.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="https://haruband.github.io/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="https://haruband.github.io/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="https://haruband.github.io/favicon-16x16.png" />
+  <link rel="alternate" type="application/atom+xml" title="CodeBook Atom Feed" href="https://haruband.github.io/atom.xml" />
+  <meta name="robots" content="index, follow" />
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <title>[K8S/Cilium] IPVLAN 기반 Routing Datapath 기법 | CodeBook</title>
+  <meta name="author" content="Inhyeok Kim" />
+  <meta name="copyright" content="CodeBook" />
+  <meta name="description" content="Haruband&#x27;s TechBlog" />
+  <link rel="canonical" href="https://haruband.github.io/k8s-cni-ipvlan/" />
+  <meta name="keywords" content="Arrow, Datafusion, Kubernetes" />
+  <meta name="google-site-verification" content="Your Google Site verification code." />
+  <meta name="msvalidate.01" content="Your Bing Site verification code." />
+  <meta property="og:url" content="https://haruband.github.io/k8s-cni-ipvlan/" />
+  <meta name="twitter:url" content="https://haruband.github.io/k8s-cni-ipvlan/" />
+  <meta property="og:description" content="Haruband&#x27;s TechBlog" />
+  <meta name="twitter:description" content="Haruband&#x27;s TechBlog" />
+  <meta property="og:title" content="[K8S&#x2F;Cilium] IPVLAN 기반 Routing Datapath 기법 | CodeBook" />
+  <meta name="twitter:title" content="[K8S&#x2F;Cilium] IPVLAN 기반 Routing Datapath 기법 | CodeBook" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:site_name" content="CodeBook" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:type" content="website" />
+  <meta property="og:updated_time" content="2020-09-19" />
+  <meta name="twitter:site" content="@your-user-name" />
+  <meta name="twitter:creator" content="@your-user-name" />
+  <script defer src="https://haruband.github.io/js/abridge.min.js?h=e0f9a881a665c86cce9c" integrity="sha384-QF67y7RnPkuDrJNQqn3/7nYxqxWkW/qHI7zN0WTES1aXbf+TotoByRBb835fUE6U"></script>
+  <noscript><link rel="stylesheet" href="https://haruband.github.io/nojs.css" /></noscript>
+</head>
+<body>
+  <header>
+    <nav>
+      <div><big><a href="https://haruband.github.io" title="CodeBook">CodeBook</a></big></div>
+      <div>
+
+        <div>
+          <ul><li><a class="s110" href="https://haruband.github.io/archive/"> Posts </a></li><li><a class="s110" href="https://haruband.github.io/tags/"> Tags </a></li><li><i type="reset" id="mode" class="js svgs adjust"></i></ul>
+        </div>
+
+        <div>
+          <div>
+            <form autocomplete=off class="js" name="goSearch" id="searchbox">
+              <div class="searchd">
+                <input id="searchinput" type="text" placeholder="Search" title="Search" />
+                <button type="submit" title="Search" class="svgs svgm search"></button>
+              </div>
+              <div class="results"><div id="suggestions"></div></div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </nav>
+  </header>
+  <main>
+    <article>
+      <h1><a href="https://haruband.github.io/k8s-cni-ipvlan/">[K8S&#x2F;Cilium] IPVLAN 기반 Routing Datapath 기법</a></h1>
+
+      <span class="s95"> Inhyeok Kim <span class="rpad"></span> September 19, 2020 <span class="rpad"></span>Updated: September 19, 2020 <span class="rpad"></span> #<a href="https://haruband.github.io/tags/k8s/">K8S</a>  #<a href="https://haruband.github.io/tags/kubernetes/">Kubernetes</a>  #<a href="https://haruband.github.io/tags/cilium/">Cilium</a> </span>
+
+    
+        <div class="block">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/cilium/">Cilium (Series)</a><br>
+            <a href="https://haruband.github.io/k8s-cni-vxlan/">[K8S&#x2F;Cilium] VXLAN 기반 Tunneling Datapath 기법</a><br>
+            <a class="scur" href="https://haruband.github.io/k8s-cni-ipvlan/">[K8S&#x2F;Cilium] IPVLAN 기반 Routing Datapath 기법</a><br> 
+          
+            <a href="https://haruband.github.io/k8s-cni-service/">[K8S&#x2F;Cilium] ClusterIP 서비스</a><br>
+            <a href="https://haruband.github.io/k8s-cni-nodeport/">[K8S&#x2F;Cilium] NodePort 서비스</a><br>
+            <a href="https://haruband.github.io/k8s-cni-dsr/">[K8S&#x2F;Cilium] DSR (Direct Server Return)</a><br>
+            <a href="https://haruband.github.io/k8s-cni-redirect/">[K8S&#x2F;Cilium] bpf_redirect_peer()&#x2F;bpf_redirect_neigh()</a><br>
+            <a href="https://haruband.github.io/k8s-cni-routing-benchmark/">[K8S&#x2F;Cilium] 라우팅 기법 성능 평가</a><br>
+            <a href="https://haruband.github.io/k8s-cni-ipvlan-redirect-bug/">[K8S&#x2F;Cilium] IPVLAN 기반 Cilium 의 NodePort 버그 분석</a><br>
+            <a href="https://haruband.github.io/k8s-cni-loadbalancing/">[K8S&#x2F;Cilium] Socket-Based LoadBalancing 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-servicemesh-proxy/">[K8S&#x2F;Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy)</a><br>
+            <a href="https://haruband.github.io/k8s-vxlan-forbidden/">[K8S] VXLAN 사용 불가 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-kafka-optimize-loadbalancer/">[K8S] 네트워크 최적화 (MetalLB)</a><br>
+            <a href="https://haruband.github.io/k8s-proxy-bypass/">[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-cgroupv2-privatens/">[K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-rpfilter/">[K8S] Cilium RPFilter 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-networkpolicy/">[K8S] Cilium NetworkPolicy 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh-cilium/">[K8S&#x2F;Istio] AmbientMesh Cilium 문제 분석</a><br>
+      </div>
+    </div>
+
+
+<p>Cilium 은 IPVLAN 에 기반한 Routing Datapath 기법을 제공하고 있다. IPVLAN 은 VXLAN 과 마찬가지로 리눅스 커널이 제공하는 기능이므로 IPVLAN 에 대한 자세한 설명은 생략하고, Cilium 의 동작 과정을 설명하면서 필요한 부분에 대해서만 간단히 부연설명하겠다. (Routing Datapath 기법은 모든 노드가 같은 서브넷 안에 있을 때만 사용 가능하다. Calico 는 같은 서브넷에서는 라우팅 기법을, 다른 서브넷에서는 터널링 기법을 사용하는 CrossSubnet 기능도 제공하지만, Cilium 에는 아직 이러한 기능은 없다.)</p>
+<p>아래 그림은 Cilium 에서 IPVLAN 을 사용할 경우 Pod-To-Pod 통신이 이루어지는 과정이다. Node0 의 Pod0 에서 Node1 의 Pod3 으로 패킷을 보내는 과정을 살펴보도록 하자.</p>
+<p><img src="https://haruband.github.io/k8s-cni-ipvlan/./cilium-ipvlan.png" alt="cilium.ipvlan" /></p>
+<p>기본적으로 VETH/VXLAN 에 비해 구조가 단순한데, 그 이유는 파드의 eth0 은 IPVLAN 슬레이브로, Node 의 eth0 은 IPVLAN 마스터로 동작하기 때문이다. IPVLAN 슬레이브에서 패킷을 전송하면 IP 헤더를 확인하여 동일한 노드에 해당 목적지 주소를 사용하는 IPVLAN 슬레이브가 있으면 바로 전달하고, 아니면 IPVLAN 마스터로 패킷을 전달한다.</p>
+<p>IPVLAN 은 MACLAN 과 달리 모든 슬레이브가 마스터의 맥 주소를 공유한다. 즉, MACLAN 처럼 마스터 네트워크 장치를 Promiscuous 모드로 사용하거나, 스위치의 물리적인 제한에 걸리는 문제가 없다는 말이다. 아래는 IPVLAN 기반의 Cilium 을 사용할 경우 파드와 노드의 네트워크 정보이다.</p>
+<pre class="z-code"><code><span class="z-text z-plain">pod0 $ ip addr show
+</span><span class="z-text z-plain">9: eth0@if2: &lt;BROADCAST,MULTICAST,NOARP,UP,LOWER_UP&gt; mtu 1500 qdisc noqueue state UNKNOWN group default qlen 1000
+</span><span class="z-text z-plain">    link/ether a4:ae:11:18:c4:2d brd ff:ff:ff:ff:ff:ff link-netnsid 0
+</span><span class="z-text z-plain">    inet 10.0.0.71/32 scope global eth0
+</span><span class="z-text z-plain">       valid_lft forever preferred_lft forever
+</span><span class="z-text z-plain">...
+</span><span class="z-text z-plain">node0 $ ip addr show
+</span><span class="z-text z-plain">2: eth0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc mq state UP group default qlen 1000
+</span><span class="z-text z-plain">    link/ether a4:ae:11:18:c4:2d brd ff:ff:ff:ff:ff:ff
+</span><span class="z-text z-plain">    altname enp2s0
+</span><span class="z-text z-plain">    inet 172.26.50.170/24 brd 172.26.50.255 scope global eth0
+</span><span class="z-text z-plain">       valid_lft forever preferred_lft forever
+</span><span class="z-text z-plain">    inet6 fe80::a6ae:11ff:fe18:c42d/64 scope link
+</span><span class="z-text z-plain">       valid_lft forever preferred_lft forever
+</span></code></pre>
+<p>IPVLAN 을 사용하는 경우, LXC BPF 프로그램(cilium/bpf/bpf_lxc.c)을 연결하는 것이 애매하다. VXLAN 을 사용하는 경우에는 파드의 veth 가 호스트 네트워크 네임스페이스에 존재하기 때문에 veth 에 LXC BPF 프로그램을 연결해서 사용하지만, IPVLAN 은 호스트 네트워크 네임스페이스에 추가적인 가상 네트워크 장치가 없기 때문에 파드의 eth0 에 LXC BPF 프로그램을 연결할 수 밖에 없다. (Kubelet 과 Cilium 이 호스트 네트워크 네임스페이스에서 동작하기 때문에 LXC BPF 프로그램을 연결할 가상 네트워크 장치가 같은 호스트 네트워크 네임스페이스에 있는 것이 편리하다.) 이 문제를 해결하기 위해 Cilium 은 호스트 네임스페이스에 각각의 파드를 위한 BPF 프로그램 어레이 맵을 하나씩 만들고, 파드의 eth0 의 egress 에는 해당 BPF 프로그램 어레이 맵의 첫 번째 프로그램을 tailcall 하는 프로그램을 연결하는 방식을 사용하고 있다.</p>
+<pre class="z-code"><code><span class="z-text z-plain">[cilium/pkg/datapath/connector/ipvlan.go]
+</span><span class="z-text z-plain">func getEntryProgInstructions(fd int) asm.Instructions {
+</span><span class="z-text z-plain">  return asm.Instructions{
+</span><span class="z-text z-plain">    asm.LoadMapPtr(asm.R2, fd),
+</span><span class="z-text z-plain">    asm.Mov.Imm(asm.R3, 0),
+</span><span class="z-text z-plain">    asm.FnTailCall.Call(),
+</span><span class="z-text z-plain">    asm.Mov.Imm(asm.R0, 0),
+</span><span class="z-text z-plain">    asm.Return(),
+</span><span class="z-text z-plain">  }
+</span><span class="z-text z-plain">}
+</span></code></pre>
+<p>위 함수는 Kubelet 에서 새로운 파드를 생성할 때 호출하는 cilium-cni 에서 파드를 위한 IPVLAN 슬레이브(eth0)를 만들고 해당 슬레이브의 egress 에 실제로 연결할 프로그램을 생성하는 함수이다. fd 인자가 바로 앞에서 언급한 호스트 네임스페이스에서 생성한 BPF 프로그램 어레이 맵에 접근할 수 있는 파일디스크립터이고, fd 와 0 을 인자로 tailcall 명령어를 호출하는 간단한 프로그램을 반환한다. 이런 준비과정을 거쳐 Cilium 은 파드의 LXC BPF 프로그램을 변경하고 싶을 때 네임스페이스 변경없이 앞에서 생성한 BPF 프로그램 어레이 맵의 첫 번째 프로그램을 변경만 하면 되는 것이다. 그리고 ingress 는 가상 네트워크 장치에 LXC BPF 프로그램을 직접 연결하는 방식이 아니기 때문에 VXLAN 과 동일한 방식을 사용한다. (cilium_call_policy 맵에 목적지(파드)의 엔드포인트 아이디를 인덱스로 사용해서 저장된 프로그램(cilium/bpf/bpf_lxc.c#handle_policy)을 tailcall 로 직접 호출한다.)</p>
+<p>참고로, 동일한 LXC BPF 프로그램(cilium/bpf/bpf_lxc.c#from-container)이 IPVLAN 에서는 파드의 eth0 의 egress 에 연결되지만, VXLAN 에서는 veth 의 ingress 에 연결된다. 이는 VXLAN 에서는 파드의 eth0 의 TX 가 veth 의 RX 로 바로 전달되기 때문에 호스트 네임스페이스에 있는 veth 의 ingress 에 연결하는 것이다.</p>
+<p>IPVLAN 슬레이브에 연결된 BPF 프로그램이 호스트 네임스페이스에서 동작하지 않기 때문에 호스트 네임스페이스에 있는 IPVLAN 마스터로 패킷을 직접 전달(redirect)하는 것은 불가능하다. BPF 프로그램에서 패킷을 전달(redirect)할때 네트워크 장치 인덱스를 같이 전달하는데, 기본적으로 동일한 네임스페이스에 있는 장치 목록에서만 검색을 하기 때문에 다른 네임스페이스에 있는 장치로 패킷을 전달(redirect)하는 것은 불가능하다. 하지만 IPVLAN 은 슬레이브에서 패킷을 내보내면(xmit) IPVLAN 드라이버에서 마스터로 직접 전달해주기 때문에 슬레이브에 연결된 BPF 프로그램에서는 패킷을 전달(redirect)하는 대신, 전송(xmit)만하면 된다. 동일한 노드에 있는 다른 슬레이브로 패킷을 전달할 때도 IPVLAN 드라이버에서 목적지 주소를 확인해서 해당 슬레이브로 패킷을 바로 전달해준다. (반대로, IPVLAN 마스터에서 슬레이브로 패킷을 전달할 때도 전달(redirect)하는 대신, 전송(xmit)하면 IPVLAN 드라이버에서 목적지 주소를 확인해서 해당 슬레이브로 패킷을 바로 전달해준다.)</p>
+<p>그럼 이제 패킷이 전달되는 과정을 좀 더 상세히 살펴보도록 하자.</p>
+<p>Node0 의 Pod0 에서 생성된 패킷은 eth0 의 ingress BPF 프로그램(cilium/bpf/bpf_lxc.c#from-container)에 의해 목적지 주소가 동일한 노드이면 해당 목적지(Pod1)의 eth0 으로 바로 전송(xmit)하고, 다른 노드이면 노드의 eth0 으로 전송(xmit)한다. 노드에서는 일반적인 패킷과 동일한 방식으로 라우팅 테이블을 참고하여 패킷을 전달하는데, 이는 새로운 노드가 추가될때 해당 노드의 PodCIDR 과 주소를 이용해서 아래와 같이 라우팅 정보를 미리 추가해놓기 때문에 가능하다. (이처럼 Routing Datapath 기법은 모든 노드가 같은 서브넷에 있으면 각 노드의 주소를 게이트웨이 주소로 사용해서 터널링 없이 라우팅이 가능하다.)</p>
+<pre class="z-code"><code><span class="z-text z-plain">node0 $ route -n
+</span><span class="z-text z-plain">Kernel IP routing table
+</span><span class="z-text z-plain">Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+</span><span class="z-text z-plain">0.0.0.0         172.26.50.1     0.0.0.0         UG    0      0        0 eth0
+</span><span class="z-text z-plain">10.0.0.0        10.0.0.196      255.255.255.0   UG    0      0        0 cilium_host
+</span><span class="z-text z-plain">10.0.0.196      0.0.0.0         255.255.255.255 UH    0      0        0 cilium_host
+</span><span class="z-text z-plain">10.0.1.0        172.26.50.102   255.255.255.0   UG    0      0        0 eth0
+</span><span class="z-text z-plain">172.17.0.0      0.0.0.0         255.255.0.0     U     0      0        0 docker0
+</span><span class="z-text z-plain">172.26.50.0     0.0.0.0         255.255.255.0   U     0      0        0 eth0
+</span></code></pre>
+<p>Node1 의 물리 네트워크 장치(eth0)로 수신된 패킷은 ingress BPF 프로그램(cilium/bpf/bpf_host.c#from-netdev)에서 처리된다. 여기서는 목적지 주소가 해당 노드에 있으므로 cilium_call_policy 맵에 목적지(Pod3)의 엔드포인트 아이디를 인덱스로 사용해서 저장된 프로그램(cilium/bpf/bpf_lxc.c#handle_policy)을 tailcall 로 호출하여 필요한 처리를 한 뒤, 목적지(Pod3)의 eth0 으로 패킷을 전송(xmit)한다.</p>
+<p>여기까지 IPVLAN 을 통해 Pod-To-Pod 통신이 이루어지는 과정을 살펴보았다.</p>
+
+      <nav>
+        <div>
+          <a href="https://haruband.github.io/k8s-cni-service/">&#8249; [K8S&#x2F;Cilium] ClusterIP 서비스</a>
+        </div>
+        <div>
+          <a href="https://haruband.github.io/k8s-cni-vxlan/"> [K8S&#x2F;Cilium] VXLAN 기반 Tunneling Datapath 기법 &#8250;</a>
+        </div>
+      </nav>
+    </article>
+
+    <div class="sblock">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/cilium/">Series</a><br>
+
+          
+          
+      <a href="https://haruband.github.io/k8s-cni-vxlan/">[K8S&#x2F;Cilium] VXLAN 기반 Tunneling Datapath 기법</a><br>
+
+          
+
+          
+
+          
+
+          
+            
+      <a class="scur" href="https://haruband.github.io/k8s-cni-ipvlan/">[K8S&#x2F;Cilium] IPVLAN 기반 Routing Datapath 기법</a><br>
+    
+
+          
+            <a href="https://haruband.github.io/k8s-cni-service/">[K8S&#x2F;Cilium] ClusterIP 서비스</a><br>
+          
+            <a href="https://haruband.github.io/k8s-cni-nodeport/">[K8S&#x2F;Cilium] NodePort 서비스</a><br>
+          
+            <details>
+              <summary>More...</summary>
+            </details>
+            <div class="hidden_li">
+                <a href="https://haruband.github.io/k8s-cni-dsr/">[K8S&#x2F;Cilium] DSR (Direct Server Return)</a><br>
+                <a href="https://haruband.github.io/k8s-cni-redirect/">[K8S&#x2F;Cilium] bpf_redirect_peer()&#x2F;bpf_redirect_neigh()</a><br>
+                <a href="https://haruband.github.io/k8s-cni-routing-benchmark/">[K8S&#x2F;Cilium] 라우팅 기법 성능 평가</a><br>
+                <a href="https://haruband.github.io/k8s-cni-ipvlan-redirect-bug/">[K8S&#x2F;Cilium] IPVLAN 기반 Cilium 의 NodePort 버그 분석</a><br>
+                <a href="https://haruband.github.io/k8s-cni-loadbalancing/">[K8S&#x2F;Cilium] Socket-Based LoadBalancing 기법</a><br>
+                <a href="https://haruband.github.io/k8s-cni-servicemesh-proxy/">[K8S&#x2F;Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy)</a><br>
+                <a href="https://haruband.github.io/k8s-vxlan-forbidden/">[K8S] VXLAN 사용 불가 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-kafka-optimize-loadbalancer/">[K8S] 네트워크 최적화 (MetalLB)</a><br>
+                <a href="https://haruband.github.io/k8s-proxy-bypass/">[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-cgroupv2-privatens/">[K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-rpfilter/">[K8S] Cilium RPFilter 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-networkpolicy/">[K8S] Cilium NetworkPolicy 문제 분석</a><br>
+            </div>
+        
+      <a href="https://haruband.github.io/k8s-istio-ambientmesh-cilium/">[K8S&#x2F;Istio] AmbientMesh Cilium 문제 분석</a><br>
+
+        
+      </div>
+  </main>
+  <footer>
+    <div class="c">
+      <nav class="tpad"><div><a href="https://www.linkedin.com/in/inhyeok-kim-7620a0b0/" target="_blank" title="LinkedIn"><i type="Button" class="svg linkedin" title="LinkedIn"></i></a><a href="https://github.com/haruband/" target="_blank" title="Github"><i type="Button" class="svg github" title="Github"></i></a></div></nav>
+      <nav class="vpad">
+        <a class="rpad s90" href="https://haruband.github.io/about/"> About </a>
+        <a class="rpad s90" href="https://haruband.github.io/contact/"> Contact </a>
+      </nav>
+      <p class="s80"> &copy; <span id="year">2025</span> CodeBook</p>
+      <p class="s80">Powered by <a href="https://www.getzola.org/" target="_blank">Zola</a> & <a href="https://github.com/jieiku/abridge/" target="_blank">Abridge</a></p>
+    </div>
+  </footer><span class="topout">
+<span class="topleft"> </span><a href="#" class="top" title="Back to Top"><i class="svgs svgh angu"></i></a>
+</span>
+</body>
+</html>

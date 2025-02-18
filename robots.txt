@@ -1,0 +1,5 @@
+
+Sitemap: https://haruband.github.io/sitemap.xml
+User-Agent: *
+Allow: /
+Host: https://haruband.github.io

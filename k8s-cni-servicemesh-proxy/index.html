@@ -1,0 +1,340 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="https://haruband.github.io/js/theme.min.js" integrity="sha384-pb++s6uBRKaQv+iAXpgA/H3IlpLZdO14tTwuCI7uXmz4aaZdByoCcM+6BhynMq/1"></script>
+  <link rel="stylesheet" href="https://haruband.github.io/abridge.css?h=98ebdf6fd3d59dfb2edf" />
+  <meta charset="utf-8" />
+  <meta http-equiv="x-ua-compatible" content="ie=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="base" content="https://haruband.github.io" />
+  <meta name="HandheldFriendly" content="True" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#333333" />
+  <meta name="msapplication-TileColor" content="#333333" />
+  <link rel="manifest" href="https://haruband.github.io/manifest.min.json" />
+  <link rel="mask-icon" href="https://haruband.github.io/safari-pinned-tab.svg" color="#ff9900" />
+  <link rel="icon" type="image/svg+xml" href="https://haruband.github.io/favicon.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="https://haruband.github.io/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="https://haruband.github.io/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="https://haruband.github.io/favicon-16x16.png" />
+  <link rel="alternate" type="application/atom+xml" title="CodeBook Atom Feed" href="https://haruband.github.io/atom.xml" />
+  <meta name="robots" content="index, follow" />
+  <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <meta name="bingbot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <title>[K8S/Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy) | CodeBook</title>
+  <meta name="author" content="Inhyeok Kim" />
+  <meta name="copyright" content="CodeBook" />
+  <meta name="description" content="Haruband&#x27;s TechBlog" />
+  <link rel="canonical" href="https://haruband.github.io/k8s-cni-servicemesh-proxy/" />
+  <meta name="keywords" content="Arrow, Datafusion, Kubernetes" />
+  <meta name="google-site-verification" content="Your Google Site verification code." />
+  <meta name="msvalidate.01" content="Your Bing Site verification code." />
+  <meta property="og:url" content="https://haruband.github.io/k8s-cni-servicemesh-proxy/" />
+  <meta name="twitter:url" content="https://haruband.github.io/k8s-cni-servicemesh-proxy/" />
+  <meta property="og:description" content="Haruband&#x27;s TechBlog" />
+  <meta name="twitter:description" content="Haruband&#x27;s TechBlog" />
+  <meta property="og:title" content="[K8S&#x2F;Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy) | CodeBook" />
+  <meta name="twitter:title" content="[K8S&#x2F;Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy) | CodeBook" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:image" content="https://haruband.github.io/banner.png" />
+  <meta property="og:site_name" content="CodeBook" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:type" content="website" />
+  <meta property="og:updated_time" content="2020-12-19" />
+  <meta name="twitter:site" content="@your-user-name" />
+  <meta name="twitter:creator" content="@your-user-name" />
+  <script defer src="https://haruband.github.io/js/abridge.min.js?h=e0f9a881a665c86cce9c" integrity="sha384-QF67y7RnPkuDrJNQqn3/7nYxqxWkW/qHI7zN0WTES1aXbf+TotoByRBb835fUE6U"></script>
+  <noscript><link rel="stylesheet" href="https://haruband.github.io/nojs.css" /></noscript>
+</head>
+<body>
+  <header>
+    <nav>
+      <div><big><a href="https://haruband.github.io" title="CodeBook">CodeBook</a></big></div>
+      <div>
+
+        <div>
+          <ul><li><a class="s110" href="https://haruband.github.io/archive/"> Posts </a></li><li><a class="s110" href="https://haruband.github.io/tags/"> Tags </a></li><li><i type="reset" id="mode" class="js svgs adjust"></i></ul>
+        </div>
+
+        <div>
+          <div>
+            <form autocomplete=off class="js" name="goSearch" id="searchbox">
+              <div class="searchd">
+                <input id="searchinput" type="text" placeholder="Search" title="Search" />
+                <button type="submit" title="Search" class="svgs svgm search"></button>
+              </div>
+              <div class="results"><div id="suggestions"></div></div>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </nav>
+  </header>
+  <main>
+    <article>
+      <h1><a href="https://haruband.github.io/k8s-cni-servicemesh-proxy/">[K8S&#x2F;Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy)</a></h1>
+
+      <span class="s95"> Inhyeok Kim <span class="rpad"></span> December 19, 2020 <span class="rpad"></span>Updated: December 19, 2020 <span class="rpad"></span> #<a href="https://haruband.github.io/tags/k8s/">K8S</a>  #<a href="https://haruband.github.io/tags/kubernetes/">Kubernetes</a>  #<a href="https://haruband.github.io/tags/cilium/">Cilium</a> </span>
+
+    
+        <div class="block">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/cilium/">Cilium (Series)</a><br>
+            <a href="https://haruband.github.io/k8s-cni-vxlan/">[K8S&#x2F;Cilium] VXLAN 기반 Tunneling Datapath 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-ipvlan/">[K8S&#x2F;Cilium] IPVLAN 기반 Routing Datapath 기법</a><br>
+            <a href="https://haruband.github.io/k8s-cni-service/">[K8S&#x2F;Cilium] ClusterIP 서비스</a><br>
+            <a href="https://haruband.github.io/k8s-cni-nodeport/">[K8S&#x2F;Cilium] NodePort 서비스</a><br>
+            <a href="https://haruband.github.io/k8s-cni-dsr/">[K8S&#x2F;Cilium] DSR (Direct Server Return)</a><br>
+            <a href="https://haruband.github.io/k8s-cni-redirect/">[K8S&#x2F;Cilium] bpf_redirect_peer()&#x2F;bpf_redirect_neigh()</a><br>
+            <a href="https://haruband.github.io/k8s-cni-routing-benchmark/">[K8S&#x2F;Cilium] 라우팅 기법 성능 평가</a><br>
+            <a href="https://haruband.github.io/k8s-cni-ipvlan-redirect-bug/">[K8S&#x2F;Cilium] IPVLAN 기반 Cilium 의 NodePort 버그 분석</a><br>
+            <a href="https://haruband.github.io/k8s-cni-loadbalancing/">[K8S&#x2F;Cilium] Socket-Based LoadBalancing 기법</a><br>
+            <a class="scur" href="https://haruband.github.io/k8s-cni-servicemesh-proxy/">[K8S&#x2F;Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy)</a><br> 
+          
+            <a href="https://haruband.github.io/k8s-vxlan-forbidden/">[K8S] VXLAN 사용 불가 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-kafka-optimize-loadbalancer/">[K8S] 네트워크 최적화 (MetalLB)</a><br>
+            <a href="https://haruband.github.io/k8s-proxy-bypass/">[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-cgroupv2-privatens/">[K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-rpfilter/">[K8S] Cilium RPFilter 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-networkpolicy/">[K8S] Cilium NetworkPolicy 문제 분석</a><br>
+            <a href="https://haruband.github.io/k8s-istio-ambientmesh-cilium/">[K8S&#x2F;Istio] AmbientMesh Cilium 문제 분석</a><br>
+      </div>
+    </div>
+
+
+<p>Cilium 이 최근 공개한 eBPF 기반의 서비스 메쉬에서 중요하게 언급하고 있는 것 중에 하나는 파드마다 사이드카 형태로 프록시를 추가하지 말고 노드별로 하나씩만 설치해서 사용하자는 것이다. 이는 특히 대규모의 클러스터에서 많은 사이드카 프록시로 인해 발생하는 자원 소모를 줄일 수 있을 것으로 기대되는데, 오늘은 Cilium 에서 노드별 프록시(Per-Node Proxy)가 어떤 방식으로 동작하는지 살펴보도록 하자. (일반적으로 가장 많이 사용하는 엔보이(Envoy)를 기준으로 설명하겠다.)</p>
+<p>원활한 설명을 위해 Cilium 이 제공하는 인그레스(Ingress) 예제를 이용하여 설명하도록 하겠다. 해당 예제는 Istio 의 BookInfo 예제를 기반으로 동작하며, 아래와 같은 간단한 인그레스 설정을 제공한다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> kubectl get ingress basic-ingress -o yaml</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">apiVersion:</span></span><span class="z-meta z-function-call z-arguments z-shell"> networking.k8s.io/v1</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">kind:</span></span><span class="z-meta z-function-call z-arguments z-shell"> Ingress</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">metadata:</span></span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">name:</span></span><span class="z-meta z-function-call z-arguments z-shell"> basic-ingress</span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">namespace:</span></span><span class="z-meta z-function-call z-arguments z-shell"> default</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">spec:</span></span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">ingressClassName:</span></span><span class="z-meta z-function-call z-arguments z-shell"> cilium</span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">rules:</span></span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">-</span></span><span class="z-meta z-function-call z-arguments z-shell"> http:</span>
+</span><span class="z-source z-shell z-bash">      <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">paths:</span></span>
+</span><span class="z-source z-shell z-bash">      <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">-</span></span><span class="z-meta z-function-call z-arguments z-shell"> backend:</span>
+</span><span class="z-source z-shell z-bash">          <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">service:</span></span>
+</span><span class="z-source z-shell z-bash">            <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">name:</span></span><span class="z-meta z-function-call z-arguments z-shell"> details</span>
+</span><span class="z-source z-shell z-bash">            <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">port:</span></span>
+</span><span class="z-source z-shell z-bash">              <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">number:</span></span><span class="z-meta z-function-call z-arguments z-shell"> 9080</span>
+</span><span class="z-source z-shell z-bash">        <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">path:</span></span><span class="z-meta z-function-call z-arguments z-shell"> /details</span>
+</span><span class="z-source z-shell z-bash">        <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">pathType:</span></span><span class="z-meta z-function-call z-arguments z-shell"> Prefix</span>
+</span><span class="z-source z-shell z-bash">      <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">-</span></span><span class="z-meta z-function-call z-arguments z-shell"> backend:</span>
+</span><span class="z-source z-shell z-bash">          <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">service:</span></span>
+</span><span class="z-source z-shell z-bash">            <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">name:</span></span><span class="z-meta z-function-call z-arguments z-shell"> productpage</span>
+</span><span class="z-source z-shell z-bash">            <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">port:</span></span>
+</span><span class="z-source z-shell z-bash">              <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">number:</span></span><span class="z-meta z-function-call z-arguments z-shell"> 9080</span>
+</span><span class="z-source z-shell z-bash">        <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">path:</span></span><span class="z-meta z-function-call z-arguments z-shell"> /</span>
+</span><span class="z-source z-shell z-bash">        <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">pathType:</span></span><span class="z-meta z-function-call z-arguments z-shell"> Prefix</span>
+</span></code></pre>
+<p>위의 인그레스를 등록하면 Cilium 오퍼레이터는 자동으로 아래와 같은 CiliumEnvoyConfig 를 만들고, Cilium 에이전트는 CiliumEnvoyConfig 를 기반으로 엔보이에 필요한 설정을 추가한다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> kubectl get ciliumenvoyconfig cilium-ingress-default-basic-ingress -o yaml</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">apiVersion:</span></span><span class="z-meta z-function-call z-arguments z-shell"> cilium.io/v2alpha1</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">kind:</span></span><span class="z-meta z-function-call z-arguments z-shell"> CiliumEnvoyConfig</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">metadata:</span></span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">creationTimestamp:</span></span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>2022-01-24T00:33:08Z<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span></span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">generation:</span></span><span class="z-meta z-function-call z-arguments z-shell"> 1</span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">name:</span></span><span class="z-meta z-function-call z-arguments z-shell"> cilium-ingress-default-basic-ingress</span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">resourceVersion:</span></span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>1133<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span></span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">uid:</span></span><span class="z-meta z-function-call z-arguments z-shell"> 4cd02f0f-a89e-4e15-82d5-8ec7b95e0c37</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">spec:</span></span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">backendServices:</span></span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">-</span></span><span class="z-meta z-function-call z-arguments z-shell"> name: productpage</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">namespace:</span></span><span class="z-meta z-function-call z-arguments z-shell"> default</span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">-</span></span><span class="z-meta z-function-call z-arguments z-shell"> name: details</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">namespace:</span></span><span class="z-meta z-function-call z-arguments z-shell"> default</span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">resources:</span></span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">-</span></span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-string z-quoted z-single z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&#39;</span>@type<span class="z-punctuation z-definition z-string z-end z-shell">&#39;</span></span>: type.googleapis.com/envoy.config.listener.v3.Listener</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">filterChains:</span></span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">-</span></span><span class="z-meta z-function-call z-arguments z-shell"> filters:</span>
+</span><span class="z-source z-shell z-bash">      <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">-</span></span><span class="z-meta z-function-call z-arguments z-shell"> name: envoy.filters.network.http_connection_manager</span>
+</span><span class="z-source z-shell z-bash">        <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">typedConfig:</span></span>
+</span><span class="z-source z-shell z-bash">          <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell"><span class="z-string z-quoted z-single z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&#39;</span>@type<span class="z-punctuation z-definition z-string z-end z-shell">&#39;</span></span>:</span></span><span class="z-meta z-function-call z-arguments z-shell"> type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager</span>
+</span><span class="z-source z-shell z-bash">          <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">httpFilters:</span></span>
+</span><span class="z-source z-shell z-bash">          <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">-</span></span><span class="z-meta z-function-call z-arguments z-shell"> name: envoy.filters.http.router</span>
+</span><span class="z-source z-shell z-bash">          <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">rds:</span></span>
+</span><span class="z-source z-shell z-bash">            <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">routeConfigName:</span></span><span class="z-meta z-function-call z-arguments z-shell"> cilium-ingress-default-basic-ingress_route</span>
+</span><span class="z-source z-shell z-bash">          <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">statPrefix:</span></span><span class="z-meta z-function-call z-arguments z-shell"> basic-ingress</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">name:</span></span><span class="z-meta z-function-call z-arguments z-shell"> cilium-ingress-default-basic-ingress</span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">-</span></span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-string z-quoted z-single z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&#39;</span>@type<span class="z-punctuation z-definition z-string z-end z-shell">&#39;</span></span>: type.googleapis.com/envoy.config.route.v3.RouteConfiguration</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">name:</span></span><span class="z-meta z-function-call z-arguments z-shell"> cilium-ingress-default-basic-ingress_route</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">virtualHosts:</span></span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">-</span></span><span class="z-meta z-function-call z-arguments z-shell"> domains:</span>
+</span><span class="z-source z-shell z-bash">      <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">-</span></span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-string z-quoted z-single z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&#39;</span>*<span class="z-punctuation z-definition z-string z-end z-shell">&#39;</span></span></span>
+</span><span class="z-source z-shell z-bash">      <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">name:</span></span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-string z-quoted z-single z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&#39;</span>*<span class="z-punctuation z-definition z-string z-end z-shell">&#39;</span></span></span>
+</span><span class="z-source z-shell z-bash">      <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">routes:</span></span>
+</span><span class="z-source z-shell z-bash">      <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">-</span></span><span class="z-meta z-function-call z-arguments z-shell"> match:</span>
+</span><span class="z-source z-shell z-bash">          <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">prefix:</span></span><span class="z-meta z-function-call z-arguments z-shell"> /details</span>
+</span><span class="z-source z-shell z-bash">        <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">route:</span></span>
+</span><span class="z-source z-shell z-bash">          <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">cluster:</span></span><span class="z-meta z-function-call z-arguments z-shell"> default/details</span>
+</span><span class="z-source z-shell z-bash">      <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">-</span></span><span class="z-meta z-function-call z-arguments z-shell"> match:</span>
+</span><span class="z-source z-shell z-bash">          <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">prefix:</span></span><span class="z-meta z-function-call z-arguments z-shell"> /</span>
+</span><span class="z-source z-shell z-bash">        <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">route:</span></span>
+</span><span class="z-source z-shell z-bash">          <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">cluster:</span></span><span class="z-meta z-function-call z-arguments z-shell"> default/productpage</span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">-</span></span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-string z-quoted z-single z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&#39;</span>@type<span class="z-punctuation z-definition z-string z-end z-shell">&#39;</span></span>: type.googleapis.com/envoy.config.cluster.v3.Cluster</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">connectTimeout:</span></span><span class="z-meta z-function-call z-arguments z-shell"> 5s</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">name:</span></span><span class="z-meta z-function-call z-arguments z-shell"> default/productpage</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">type:</span></span><span class="z-meta z-function-call z-arguments z-shell"> EDS</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">-</span></span><span class="z-meta z-function-call z-arguments z-shell"> <span class="z-string z-quoted z-single z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&#39;</span>@type<span class="z-punctuation z-definition z-string z-end z-shell">&#39;</span></span>: type.googleapis.com/envoy.config.cluster.v3.Cluster</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">connectTimeout:</span></span><span class="z-meta z-function-call z-arguments z-shell"> 5s</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">name:</span></span><span class="z-meta z-function-call z-arguments z-shell"> default/details</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">type:</span></span><span class="z-meta z-function-call z-arguments z-shell"> EDS</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">services:</span></span>
+</span><span class="z-source z-shell z-bash">  <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">-</span></span><span class="z-meta z-function-call z-arguments z-shell"> listener: cilium-ingress-default-basic-ingress</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">name:</span></span><span class="z-meta z-function-call z-arguments z-shell"> cilium-ingress-basic-ingress</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">namespace:</span></span><span class="z-meta z-function-call z-arguments z-shell"> default</span>
+</span></code></pre>
+<p>엔보이에 대한 자세한 설명은 본문 내용과는 어울리지 않으니 관련 자료를 참고하시고 여기서는 오늘 설명할 내용을 이해하기 위해 꼭 필요한 내용만 간단히 소개하도록 하겠다. 엔보이는 리스너(Listener)를 통해 트래픽을 전달받아서 필요한 처리를 한 다음, 클러스터(Cluster)로 트래픽을 전달한다. 위의 인그레스 예제는 리스너로 들어온 HTTP 요청의 URL 을 확인하여 /details 는 default 네임스페이스의 details 서비스(default/details 클러스터)로 전달하고, 나머지는 모두 default 네임스페이스의 productpage 서비스(default/productpage 클러스터)로 전달하라는 의미이다. 두 개의 클러스터는 EDS 타입으로 설정되어있고, Cilium 에이전트가 해당 클러스터의 엔드포인트 정보를 자동으로 업데이트한다.</p>
+<p>간단히 Cilium 이 제공하는 인그레스 예제를 이용하여 엔보이의 리스너가 전달받은 트래픽을 어떻게 처리하는지 살펴보았으니, 이제 어떻게 엔보이의 리스너로 트래픽을 전달하는지 살펴보도록 하자.</p>
+<p>기존의 사이드카 방식의 프록시는 IPTables 를 이용하여 모든 트래픽을 엔보이의 특정 리스너로 전달하는 방식을 사용하지만, Cilium 의 노드별 프록시는 특정 서비스(cilium-ingress-basic-ingress)로 들어오는 트래픽을 특정 리스너(cilium-ingress-default-basic-ingress)로 전달하는 방식을 사용하고 있다. Cilium 에이전트는 엔보이에 리스너를 등록하기 전에 임의의 포트를 할당하고, 리스너와 연결된 서비스에 해당 포트를 설정해둔다. 이후에는 해당 서비스로 들어오는 모든 트래픽은 리스너가 할당받은 포트로 전달된다.</p>
+<p>위의 인그레스 예제를 좀 더 살펴보면, 아래와 같이 리스너와 연결된 서비스를 확인할 수 있고, 해당 서비스로 접속하면 위에서 설정한대로 default 네임스페이스의 details 서비스와 productpage 서비스로 연결되는 것을 확인할 수 있다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> kubectl get services</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">NAME</span></span><span class="z-meta z-function-call z-arguments z-shell">                           TYPE           CLUSTER-IP       EXTERNAL-IP   PORT(S</span><span class="z-meta z-function-call z-shell"></span>)        <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">AGE</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">cilium-ingress-basic-ingress</span></span><span class="z-meta z-function-call z-arguments z-shell">   LoadBalancer   10.103.218.167   <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>pending<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>     <span class="z-constant z-numeric z-integer z-decimal z-file-descriptor z-shell">80</span>:31907/TCP   23h</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> curl http://172.26.50.200:31907/details/1</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">{<span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>id<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span>:1,<span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>author<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span>:<span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>William Shakespeare<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span>,<span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>year<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span>:1595,<span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>type<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span>:<span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>paperback<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span>,<span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>pages<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span>:200,<span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>publisher<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span>:<span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>PublisherA<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span>,<span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>language<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span>:<span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>English<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span>,<span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>ISBN-10<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span>:<span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>1234567890<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span>,<span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>ISBN-13<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span>:<span class="z-string z-quoted z-double z-shell"><span class="z-punctuation z-definition z-string z-begin z-shell">&quot;</span>123-1234567890<span class="z-punctuation z-definition z-string z-end z-shell">&quot;</span></span></span></span><span class="z-meta z-function-call z-shell"></span>}
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> curl http://172.26.50.200:31907/</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>!DOCTYPE <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">html</span></span><span class="z-meta z-function-call z-arguments z-shell"><span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>
+</span></span><span class="z-source z-shell z-bash"><span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>html<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>
+</span><span class="z-source z-shell z-bash">  <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>head<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>
+</span><span class="z-source z-shell z-bash">    <span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>title<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>Simple <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Bookstore</span></span><span class="z-meta z-function-call z-arguments z-shell"> App<span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>/title<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>
+</span></span><span class="z-source z-shell z-bash">    <span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-keyword z-operator z-assignment z-redirection z-shell">&lt;</span>/html<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>
+</span></code></pre>
+<p>Cilium 은 서비스로 들어온 트래픽을 리스너로 전달하기 위해 두 가지 방식을 제공하고 있다. 첫 번째는 IPTables 를 이용하는 방식이고, 두 번째는 eBPF 를 이용하는 방식이다. 지금부터 이 두 가지 방식이 각각 어떻게 동작하는지 하나씩 살펴보도록 하자.</p>
+<h2 id="iptables-giban-teuraepig-jeondal">IPTables 기반 트래픽 전달</h2>
+<p>Cilium 은 리스너와 연결된 서비스로 들어온 모든 패킷에 매직 코드(0x200)와 리스너의 포트를 마킹한다. 아래는 위의 인그레스 예제에서 사용 중인 엔보이의 열린파일 목록이다. 이를 통해 우리는 리스너가 할당받은 포트가 18243 번인 것과 Cilium 이 해당 서비스로 들어온 모든 패킷에 18243 을 상위 16 비트로, 0x200 을 하위 16 비트로 하는 0x43470200 을 마킹하는 것을 알 수 있다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> lsof -p $(pidof cilium-envoy)</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">COMMAND</span></span><span class="z-meta z-function-call z-arguments z-shell">    PID USER   FD      TYPE             DEVICE SIZE/OFF     NODE NAME</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">cilium-en</span></span><span class="z-meta z-function-call z-arguments z-shell"> 7024 root  105u     IPv4              50630      0t0      TCP <span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span>:18243 (LISTEN</span><span class="z-meta z-function-call z-shell"></span>)
+</span></code></pre>
+<p>Cilium 은 다른 목적지 주소를 가지는 패킷을 엔보이로 전달하기 위해 아래와 같이 IPTables 가 제공하는 TPROXY 를 사용한다. 아래 CILIUM_PRE_mangle 체인을 보면 0x43470200 이 마킹된 패킷을 18243 포트로 전달하는 룰을 볼 수 있다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> iptables -t mangle -L</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Chain</span></span><span class="z-meta z-function-call z-arguments z-shell"> PREROUTING (policy ACCEPT</span><span class="z-meta z-function-call z-shell"></span>)
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">target</span></span><span class="z-meta z-function-call z-arguments z-shell">     prot opt source               destination</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">CILIUM_PRE_mangle</span></span><span class="z-meta z-function-call z-arguments z-shell">  all<span class="z-keyword z-operator z-end-of-options z-shell">  --</span></span><span class="z-meta z-function-call z-arguments z-shell">  anywhere             anywhere             /<span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span> cilium-feeder: CILIUM_PRE_mangle <span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span>/</span>
+</span><span class="z-source z-shell z-bash">
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">Chain</span></span><span class="z-meta z-function-call z-arguments z-shell"> CILIUM_PRE_mangle (1 references</span><span class="z-meta z-function-call z-shell"></span>)
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">target</span></span><span class="z-meta z-function-call z-arguments z-shell">     prot opt source               destination</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">MARK</span></span><span class="z-meta z-function-call z-arguments z-shell">       all<span class="z-keyword z-operator z-end-of-options z-shell">  --</span></span><span class="z-meta z-function-call z-arguments z-shell">  anywhere             anywhere             socket --transparent /<span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span> cilium: any-<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span>pod redirect proxied traffic to host proxy <span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span>/ MARK set 0x200</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">TPROXY</span></span><span class="z-meta z-function-call z-arguments z-shell">     tcp<span class="z-keyword z-operator z-end-of-options z-shell">  --</span></span><span class="z-meta z-function-call z-arguments z-shell">  anywhere             anywhere             mark match 0x43470200 /<span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span> cilium: TPROXY to host cilium-ingress-default-basic-ingress proxy <span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span>/ TPROXY redirect 0.0.0.0:18243 mark 0x200/0xffffffff</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span></code></pre>
+<p>외부에서 해당 서비스에 접속해보면, 아래와 같이 엔보이에 연결이 추가되어있는걸 확인할 수 있다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> lsof -p $(pidof cilium-envoy)</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">COMMAND</span></span><span class="z-meta z-function-call z-arguments z-shell">    PID USER   FD      TYPE             DEVICE SIZE/OFF     NODE NAME</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">cilium-en</span></span><span class="z-meta z-function-call z-arguments z-shell"> 7024 root  105u     IPv4              50630      0t0      TCP <span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span>:18243 (LISTEN</span><span class="z-meta z-function-call z-shell"></span>)
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">cilium-en</span></span><span class="z-meta z-function-call z-arguments z-shell"> 7024 root  107u     IPv4            1185132      0t0      TCP 10.0.0.9:40494-<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span><span class="z-constant z-numeric z-integer z-decimal z-file-descriptor z-shell">10</span>.0.1.174:9080 (ESTABLISHED</span><span class="z-meta z-function-call z-shell"></span>)
+</span></code></pre>
+<h2 id="ebpf-giban-teuraepig-jeondal">eBPF 기반 트래픽 전달</h2>
+<p>Cilium 은 리스너와 연결된 서비스로 들어온 모든 패킷을 리스너가 할당받은 포트로 바로 전달한다. BPF 프로그램에서 해당 포트와 연결된 소켓을 패킷에 바로 연결해버리기 때문에 굉장히 간단하다.</p>
+<p>외부에서 해당 서비스에 접속해보면, IPTables 의 TPROXY 없이도 목적지 주소가 다른 패킷이 엔보이로 잘 전달되는 것을 볼 수 있다.</p>
+<pre data-lang="bash" class="language-bash z-code"><code class="language-bash" data-lang="bash"><span class="z-source z-shell z-bash"><span class="z-comment z-line z-number-sign z-shell"><span class="z-punctuation z-definition z-comment z-begin z-shell">#</span></span><span class="z-comment z-line z-number-sign z-shell"> lsof -p $(pidof cilium-envoy)</span><span class="z-comment z-line z-number-sign z-shell">
+</span></span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">COMMAND</span></span><span class="z-meta z-function-call z-arguments z-shell">    PID USER   FD      TYPE             DEVICE SIZE/OFF     NODE NAME</span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">...</span></span>
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">cilium-en</span></span><span class="z-meta z-function-call z-arguments z-shell"> 6823 root  105u     IPv4              50730      0t0      TCP <span class="z-keyword z-operator z-regexp z-quantifier z-shell">*</span>:13352 (LISTEN</span><span class="z-meta z-function-call z-shell"></span>)
+</span><span class="z-source z-shell z-bash"><span class="z-meta z-function-call z-shell"><span class="z-variable z-function z-shell">cilium-en</span></span><span class="z-meta z-function-call z-arguments z-shell"> 6823 root  107u     IPv4              73061      0t0      TCP 10.0.0.62:35128-<span class="z-keyword z-operator z-assignment z-redirection z-shell">&gt;</span><span class="z-constant z-numeric z-integer z-decimal z-file-descriptor z-shell">10</span>.0.1.224:9080 (ESTABLISHED</span><span class="z-meta z-function-call z-shell"></span>)
+</span></code></pre>
+
+      <nav>
+        <div>
+          <a href="https://haruband.github.io/k8s-vxlan-forbidden/">&#8249; [K8S] VXLAN 사용 불가 문제 분석</a>
+        </div>
+        <div>
+          <a href="https://haruband.github.io/k8s-cni-loadbalancing/"> [K8S&#x2F;Cilium] Socket-Based LoadBalancing 기법 &#8250;</a>
+        </div>
+      </nav>
+    </article>
+
+    <div class="sblock">
+      <div class="blockdiv">
+        <a class="b s150" href="https://haruband.github.io/tags/cilium/">Series</a><br>
+
+          
+          
+      <a href="https://haruband.github.io/k8s-cni-vxlan/">[K8S&#x2F;Cilium] VXLAN 기반 Tunneling Datapath 기법</a><br>
+
+          
+            <details>
+              <summary>More...</summary>
+            </details>
+            <div class="hidden_li">
+                <a href="https://haruband.github.io/k8s-cni-ipvlan/">[K8S&#x2F;Cilium] IPVLAN 기반 Routing Datapath 기법</a><br>
+                <a href="https://haruband.github.io/k8s-cni-service/">[K8S&#x2F;Cilium] ClusterIP 서비스</a><br>
+                <a href="https://haruband.github.io/k8s-cni-nodeport/">[K8S&#x2F;Cilium] NodePort 서비스</a><br>
+                <a href="https://haruband.github.io/k8s-cni-dsr/">[K8S&#x2F;Cilium] DSR (Direct Server Return)</a><br>
+                <a href="https://haruband.github.io/k8s-cni-redirect/">[K8S&#x2F;Cilium] bpf_redirect_peer()&#x2F;bpf_redirect_neigh()</a><br>
+                <a href="https://haruband.github.io/k8s-cni-routing-benchmark/">[K8S&#x2F;Cilium] 라우팅 기법 성능 평가</a><br>
+            </div>
+
+          
+
+          
+            <a href="https://haruband.github.io/k8s-cni-ipvlan-redirect-bug/">[K8S&#x2F;Cilium] IPVLAN 기반 Cilium 의 NodePort 버그 분석</a><br>
+            <a href="https://haruband.github.io/k8s-cni-loadbalancing/">[K8S&#x2F;Cilium] Socket-Based LoadBalancing 기법</a><br>
+
+          
+            
+      <a class="scur" href="https://haruband.github.io/k8s-cni-servicemesh-proxy/">[K8S&#x2F;Cilium] eBPF 기반 서비스 메쉬 분석 (Per-Node Proxy)</a><br>
+    
+
+          
+            <a href="https://haruband.github.io/k8s-vxlan-forbidden/">[K8S] VXLAN 사용 불가 문제 분석</a><br>
+          
+            <a href="https://haruband.github.io/k8s-kafka-optimize-loadbalancer/">[K8S] 네트워크 최적화 (MetalLB)</a><br>
+          
+            <details>
+              <summary>More...</summary>
+            </details>
+            <div class="hidden_li">
+                <a href="https://haruband.github.io/k8s-proxy-bypass/">[K8S] Cilium Socket-based LoadBalancing 에 의한 Istio Envoy 우회 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-cgroupv2-privatens/">[K8S] Cilium CGroupV2&#x2F;PrivateNS 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-rpfilter/">[K8S] Cilium RPFilter 문제 분석</a><br>
+                <a href="https://haruband.github.io/k8s-networkpolicy/">[K8S] Cilium NetworkPolicy 문제 분석</a><br>
+            </div>
+        
+      <a href="https://haruband.github.io/k8s-istio-ambientmesh-cilium/">[K8S&#x2F;Istio] AmbientMesh Cilium 문제 분석</a><br>
+
+        
+      </div>
+      <div class="blockdiv sticky">
+        <a class="b s150" href="#">Index</a>
+        <div>
+          <a href="#iptables-giban-teuraepig-jeondal">IPTables 기반 트래픽 전달</a>
+        </div>
+        <div>
+          <a href="#ebpf-giban-teuraepig-jeondal">eBPF 기반 트래픽 전달</a>
+        </div>
+      </div>
+    </div>
+  </main>
+  <footer>
+    <div class="c">
+      <nav class="tpad"><div><a href="https://www.linkedin.com/in/inhyeok-kim-7620a0b0/" target="_blank" title="LinkedIn"><i type="Button" class="svg linkedin" title="LinkedIn"></i></a><a href="https://github.com/haruband/" target="_blank" title="Github"><i type="Button" class="svg github" title="Github"></i></a></div></nav>
+      <nav class="vpad">
+        <a class="rpad s90" href="https://haruband.github.io/about/"> About </a>
+        <a class="rpad s90" href="https://haruband.github.io/contact/"> Contact </a>
+      </nav>
+      <p class="s80"> &copy; <span id="year">2025</span> CodeBook</p>
+      <p class="s80">Powered by <a href="https://www.getzola.org/" target="_blank">Zola</a> & <a href="https://github.com/jieiku/abridge/" target="_blank">Abridge</a></p>
+    </div>
+  </footer><span class="topout">
+<span class="topleft"> </span><a href="#" class="top" title="Back to Top"><i class="svgs svgh angu"></i></a>
+</span>
+</body>
+</html>
