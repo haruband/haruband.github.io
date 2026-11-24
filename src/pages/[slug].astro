@@ -1,0 +1,60 @@
+---
+import { render } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import { formatDate, getPosts, postUrl, tagSlug, type Post } from '../lib/posts';
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return posts.map((post) => ({ params: { slug: post.id }, props: { post, posts } }));
+}
+
+interface Props { post: Post; posts: Post[] }
+const { post, posts } = Astro.props;
+const { Content, headings } = await render(post);
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+const series = post.data.series
+  ? posts.filter((p) => p.data.series === post.data.series).sort((a, b) => a.data.date.valueOf() - b.data.date.valueOf())
+  : [];
+const idx = series.findIndex((p) => p.id === post.id);
+const prev = idx > 0 ? series[idx - 1] : undefined;
+const next = idx >= 0 && idx < series.length - 1 ? series[idx + 1] : undefined;
+const plain = post.body?.replace(/[#*`>\[\]()!_-]/g, ' ').replace(/\s+/g, ' ').trim() ?? '';
+const description = plain.slice(0, 150);
+---
+
+<Base title={post.data.title} description={description}>
+  <article>
+    <header class="post-header">
+      {post.data.series && <div class="series-label">{post.data.series} 시리즈</div>}
+      <h1>{post.data.title}</h1>
+      <div class="post-meta">
+        <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
+        <div class="tags">{post.data.tags.map((t) => <a class="tag" href={`/tags/${tagSlug(t)}/`}>{t}</a>)}</div>
+      </div>
+    </header>
+
+    {toc.length > 2 && (
+      <details class="toc" open>
+        <summary>목차</summary>
+        <ul>{toc.map((h) => <li class={`depth-${h.depth}`}><a href={`#${h.slug}`}>{h.text}</a></li>)}</ul>
+      </details>
+    )}
+
+    <div class="prose"><Content /></div>
+
+    {series.length > 1 && (
+      <aside class="series-box">
+        <h2>{post.data.series} 시리즈 ({idx + 1}/{series.length})</h2>
+        <ol>
+          {series.map((p) => (
+            <li aria-current={p.id === post.id ? 'true' : undefined}><a href={postUrl(p)}>{p.data.title}</a></li>
+          ))}
+        </ol>
+      </aside>
+    )}
+    <nav class="pager">
+      {prev ? <a href={postUrl(prev)}><small>← 이전 글</small>{prev.data.title}</a> : <span />}
+      {next && <a href={postUrl(next)} style="text-align:right"><small>다음 글 →</small>{next.data.title}</a>}
+    </nav>
+  </article>
+</Base>
