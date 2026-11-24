@@ -19,7 +19,7 @@ export const profile = {
   handle: 'haruband',
   headline: 'Data·AI Platform Engineer · LLM Agent / RAG / Ontology / Rust Data Engine',
   summary: [
-    '온톨로지 기반 Data/AI 플랫폼을 만들고 있으며, 이 플랫폼은 여러 대기업의 AX(AI 전환)에 활용되고 있습니다. LLM 에이전트 실행 환경과 도구, RAG·하이브리드 검색, 온톨로지 시맨틱 계층을 설계하고 개발합니다.',
+    '쿠버네티스 기반의 온톨로지 Data/AI 플랫폼을 만들고 있으며, 이 플랫폼은 여러 대기업의 AX(AI 전환)에 활용되고 있습니다. LLM 에이전트 실행 환경과 도구, RAG·하이브리드 검색, 온톨로지 시맨틱 계층을 설계하고 개발합니다.',
     '리눅스 커널·가상화 연구로 시작해 쿠버네티스·eBPF 인프라, Rust 기반 데이터 엔진까지 시스템 전 계층을 직접 다뤄 왔고, 그 경험을 AI 플랫폼에 녹이고 있습니다.',
   ],
   links: [
@@ -48,6 +48,7 @@ export const experience: Entry[] = [
         text: '온톨로지 기반 Data/AI 플랫폼 개발',
         sub: [
           '기업의 데이터를 업무 개념(온톨로지)으로 연결하고, 그 위에서 LLM 에이전트가 질문에 답하고 업무를 수행하는 플랫폼',
+          '데이터 처리 파이프라인, 문서 검색, LLM 에이전트가 모두 쿠버네티스 위에서 동작하는 클라우드 네이티브 구조',
           '플랫폼의 AI 계층 전반을 설계하고 개발',
         ],
       },
