@@ -1,0 +1,25 @@
+---
+import { formatDate, postUrl, type Post } from '../lib/posts';
+
+interface Props { posts: Post[]; groupByYear?: boolean }
+const { posts, groupByYear = true } = Astro.props;
+const groups = new Map<number, Post[]>();
+for (const p of posts) {
+  const y = groupByYear ? p.data.date.getUTCFullYear() : 0;
+  groups.set(y, [...(groups.get(y) ?? []), p]);
+}
+---
+
+{[...groups].map(([year, list]) => (
+  <section>
+    {groupByYear && <h2 class="year">{year}</h2>}
+    <ul class="post-list">
+      {list.map((p) => (
+        <li>
+          <time datetime={p.data.date.toISOString()}>{formatDate(p.data.date).slice(5)}</time>
+          <a href={postUrl(p)}>{p.data.title}</a>
+        </li>
+      ))}
+    </ul>
+  </section>
+))}

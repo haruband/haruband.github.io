@@ -1,0 +1,137 @@
+---
+import Base from '../layouts/Base.astro';
+import { getPosts, postUrl } from '../lib/posts';
+import { awards, education, experience, profile, skills, type Entry } from '../data/resume';
+
+const posts = await getPosts();
+const byId = new Map(posts.map((p) => [p.id, p]));
+const related = (ids?: string[]) => (ids ?? []).map((id) => byId.get(id)).filter((p) => p !== undefined);
+const sections: { title: string; entries: Entry[] }[] = [
+  { title: '경력', entries: experience },
+  { title: '학력 및 연구', entries: education },
+];
+---
+
+<Base title="About" description={`${profile.name} — ${profile.headline}`}>
+  <article class="resume">
+    <header class="r-head">
+      <div>
+        <h1>{profile.name} <span>@{profile.handle}</span></h1>
+        <p class="r-headline">{profile.headline}</p>
+      </div>
+      <button class="r-print" type="button" onclick="window.print()">PDF로 저장</button>
+    </header>
+
+    <section class="r-summary">
+      {profile.summary.map((s) => <p>{s}</p>)}
+    </section>
+
+    <ul class="r-links" id="contact">
+      {profile.links.map((l) => <li><span>{l.label}</span><a href={l.href}>{l.value}</a></li>)}
+    </ul>
+
+    <section>
+      <h2 class="r-section">핵심 기술</h2>
+      <dl class="r-skills">
+        {skills.map((g) => (
+          <>
+            <dt>{g.area}</dt>
+            <dd>{g.items.map((i) => <span class="chip">{i}</span>)}</dd>
+          </>
+        ))}
+      </dl>
+    </section>
+
+    {sections.map((sec) => (
+      <section>
+        <h2 class="r-section">{sec.title}</h2>
+        {sec.entries.map((e) => (
+          <div class="r-entry">
+            <div class="r-entry-head">
+              <h3>{e.org}{e.role && <span class="r-role">{e.role}</span>}</h3>
+              <span class="r-period">{e.period}</span>
+            </div>
+            <ul class="r-items">
+              {e.items.map((it) => (
+                <li>
+                  <strong>{it.text}</strong>
+                  {it.sub && <ul>{it.sub.map((s) => <li>{s}</li>)}</ul>}
+                  {related(it.posts).length > 0 && (
+                    <div class="r-posts">
+                      <span>관련 글</span>
+                      {related(it.posts).map((p) => <a href={postUrl(p)}>{p.data.title.replace(/^\[(?:[^\]/]+\/)?([^\]]+)\]\s*/, '$1 ')}</a>)}
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </section>
+    ))}
+
+    <section>
+      <h2 class="r-section">수상</h2>
+      {awards.map((a) => (
+        <div class="r-entry">
+          <div class="r-entry-head">
+            <h3>{a.title}</h3>
+            <span class="r-period">{a.year}</span>
+          </div>
+          <p class="r-desc">{a.desc}</p>
+        </div>
+      ))}
+    </section>
+  </article>
+</Base>
+
+<style>
+  .resume { --gap: 28px; }
+  .r-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+  .r-head h1 { font-size: 2.1rem; letter-spacing: -0.03em; margin: 0; line-height: 1.25; }
+  .r-head h1 span { font-size: 1rem; color: var(--fg-muted); font-weight: 500; letter-spacing: 0; }
+  .r-headline { margin: 6px 0 0; color: var(--accent); font-weight: 600; font-size: 0.98rem; }
+  .r-print { flex: none; font: inherit; font-size: 0.85rem; padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-soft); color: var(--fg); cursor: pointer; }
+  .r-print:hover { border-color: var(--accent); color: var(--accent); }
+  .r-summary { margin: 24px 0 16px; font-size: 1.02rem; }
+  .r-summary p { margin: 0 0 6px; }
+  .r-links { list-style: none; padding: 0; margin: 0 0 8px; display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 0.9rem; }
+  .r-links span { color: var(--fg-muted); margin-right: 6px; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .r-section { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin: 44px 0 20px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .r-skills { display: grid; grid-template-columns: 9rem 1fr; gap: 10px 16px; margin: 0; }
+  .r-skills dt { font-weight: 600; font-size: 0.92rem; padding-top: 2px; }
+  .r-skills dd { margin: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 0.82rem; padding: 1px 10px; border-radius: 6px; background: var(--bg-soft); border: 1px solid var(--border); }
+  .r-entry { margin-bottom: var(--gap); }
+  .r-entry-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .r-entry-head h3 { margin: 0; font-size: 1.15rem; }
+  .r-role { font-weight: 500; color: var(--fg-muted); font-size: 0.9rem; margin-left: 10px; }
+  .r-period { color: var(--fg-muted); font-size: 0.88rem; font-variant-numeric: tabular-nums; }
+  .r-items { margin: 8px 0 0; padding-left: 20px; }
+  .r-items > li { margin: 8px 0; }
+  .r-items > li > strong { font-weight: 600; }
+  .r-items ul { margin: 2px 0 0; padding-left: 18px; color: var(--fg-muted); font-size: 0.94rem; line-height: 1.65; }
+  .r-posts { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 6px; font-size: 0.84rem; }
+  .r-posts span { color: var(--fg-muted); }
+  .r-posts a::before { content: '↗ '; }
+  .r-desc { margin: 6px 0 0; color: var(--fg-muted); font-size: 0.95rem; }
+
+  @media (max-width: 600px) {
+    .r-head h1 { font-size: 1.7rem; }
+    .r-skills { grid-template-columns: 1fr; gap: 4px; }
+    .r-skills dd { margin-bottom: 10px; }
+  }
+
+  @media print {
+    @page { size: A4; margin: 14mm 14mm; }
+    :global(.site-header), :global(.site-footer), .r-print, .r-posts { display: none !important; }
+    :global(main.container) { padding-top: 0 !important; max-width: none !important; }
+    :global(body) { font-size: 10.5pt; line-height: 1.55; background: #fff; color: #111; }
+    .resume { --gap: 14px; }
+    .r-section { margin: 22px 0 10px; break-after: avoid; }
+    .r-entry-head { break-after: avoid; }
+    .r-items > li { break-inside: avoid; }
+    .r-items ul { color: #444; }
+    a { color: #111; }
+  }
+</style>

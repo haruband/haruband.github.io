@@ -1,0 +1,19 @@
+---
+import Base from '../layouts/Base.astro';
+import PostList from '../components/PostList.astro';
+import { getPosts } from '../lib/posts';
+
+const posts = await getPosts();
+---
+
+<Base>
+  <div class="intro">
+    <p>
+      <strong>CodeBook</strong> — 리눅스 커널, eBPF, 쿠버네티스 네트워킹, Arrow/Datafusion 기반 데이터 엔진을
+      직접 분석하고 실험한 기록입니다. <a href="/about/">글쓴이 소개 →</a>
+    </p>
+  </div>
+  <h1 class="page-title">Posts</h1>
+  <p class="page-sub">총 {posts.length}개의 글</p>
+  <PostList posts={posts} />
+</Base>
